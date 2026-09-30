@@ -1,0 +1,68 @@
+/*
+ * FieldTrack design tokens.
+ * Every colour, space, radius and shadow in the app comes from here — components never
+ * hard-code values. Spacing follows an 8px grid.
+ */
+:root {
+  /* Brand */
+  --color-navy: #14213d;
+  --color-navy-700: #1d2d52;
+  --color-navy-600: #2a3b63;
+  --color-orange: #ff7a00;
+  --color-orange-600: #e56d00;
+
+  /* Neutrals */
+  --color-white: #ffffff;
+  --color-bg: #f4f5f7;
+  --color-text: #1a1a1a;
+  --color-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-row-hover: #f9fafb;
+
+  /* Status */
+  --color-green: #1b9e4b;
+  --color-amber: #f5a623;
+  --color-red: #d33a3a;
+
+  /* Status tints (backgrounds for chips, banners, highlighted rows) */
+  --color-green-tint: #e7f5ec;
+  --color-amber-tint: #fef4e2;
+  --color-red-tint: #fbeaea;
+  --color-orange-tint: #fff1e5;
+  --color-navy-tint: #e8ebf2;
+  --color-amber-text: #8a5a00; /* readable text on amber tint */
+
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* 8px spacing grid */
+  --space-half: 4px;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+  --space-8: 64px;
+
+  /* Shape & depth */
+  --radius: 8px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(20, 33, 61, 0.05), 0 4px 12px rgba(20, 33, 61, 0.06);
+  --shadow-modal: 0 24px 48px rgba(20, 33, 61, 0.24);
+  --focus-ring: 0 0 0 3px rgba(255, 122, 0, 0.35);
+
+  /* Layout */
+  --sidebar-width: 240px;
+  --topbar-height: 72px;
+}
