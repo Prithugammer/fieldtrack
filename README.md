@@ -155,7 +155,8 @@ The frontend reads `VITE_API_URL` (default `http://127.0.0.1:5000`) — see
 ```bash
 cd backend
 pytest                           # 54 tests
-pip install -r requirements-dev.txt && black --check .
+pip install -r requirements-dev.txt
+black --check .
 
 cd ../frontend
 npm run build                    # production build

@@ -1,0 +1,4 @@
+# Keep LF line endings in every checkout (Windows included) so formatters and diffs agree.
+* text=auto eol=lf
+*.png binary
+*.svg text eol=lf
