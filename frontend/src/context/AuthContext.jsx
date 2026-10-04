@@ -23,6 +23,11 @@ function storeToken(token) {
   }
 }
 
+/**
+ * Holds the JWT and the signed-in user. The token is kept in localStorage so a page refresh
+ * doesn't sign the user out; any 401 from the API (e.g. the 8-hour token expired) signs them
+ * out everywhere at once.
+ */
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => {
     const stored = readStoredToken()
@@ -84,6 +89,9 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
+/**
+ * Read the auth state (user, login, logout, hasRole) from any component.
+ */
 export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>')

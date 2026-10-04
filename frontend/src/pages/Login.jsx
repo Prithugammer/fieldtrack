@@ -14,6 +14,10 @@ const DEMO_ACCOUNTS = [
   { role: 'Supervisor', email: 'supervisor@fieldtrack.com', password: 'Super123!' },
 ]
 
+/**
+ * Staff sign-in. The demo-account buttons only fill the form; whether the login is allowed
+ * (wrong password, worker or deactivated account) is decided by the server.
+ */
 export default function Login() {
   const { user, login } = useAuth()
   const navigate = useNavigate()

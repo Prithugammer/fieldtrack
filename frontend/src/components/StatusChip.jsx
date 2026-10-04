@@ -20,6 +20,10 @@ const TONES = {
   Worker: 'muted',
 }
 
+/**
+ * Coloured pill for job and time-entry statuses. The status text is always shown, so colour is
+ * never the only signal.
+ */
 export default function StatusChip({ status, tone }) {
   return <span className={`chip chip--${tone || TONES[status] || 'muted'}`}>{status}</span>
 }

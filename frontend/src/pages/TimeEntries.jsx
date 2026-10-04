@@ -30,6 +30,11 @@ function northOf(site, metres) {
   }
 }
 
+/**
+ * Supervisor's time screen: record GPS-stamped entries, review geofence flags, approve or
+ * reject. Off-site entries are flagged rather than blocked: GPS drifts and people clock in from
+ * the site trailer, so a person decides and the company still pays for time worked.
+ */
 export default function TimeEntries() {
   const { hasRole } = useAuth()
   const canRecord = hasRole('Admin', 'Supervisor')
@@ -303,6 +308,10 @@ function GpsHelper({ site, onPick }) {
 
 const ENTRY_FIELDS = ['user_id', 'job_id', 'clock_in', 'clock_out', 'in_lat', 'in_lng', 'out_lat', 'out_lng']
 
+/**
+ * Record a shift. The "Simulate phone GPS" buttons stand in for the mobile app's location
+ * reading; the server measures the distance and decides whether to flag the entry.
+ */
 function RecordEntryModal({ workers, siteById, onClose, onSaved }) {
   const [form, setForm] = useState({
     user_id: '',
@@ -456,6 +465,9 @@ function RecordEntryModal({ workers, siteById, onClose, onSaved }) {
   )
 }
 
+/**
+ * Close an open entry. The clock-out position is checked against the geofence as well.
+ */
 function ClockOutModal({ entry, site, onClose, onSaved }) {
   const [form, setForm] = useState({ clock_out: toLocalInput(new Date()), out_lat: '', out_lng: '' })
   const [errors, setErrors] = useState({})
@@ -532,6 +544,9 @@ function ClockOutModal({ entry, site, onClose, onSaved }) {
   )
 }
 
+/**
+ * Approve or reject with a mandatory reason, stored with the supervisor's name as the audit trail.
+ */
 function DecisionModal({ entry, decision, onClose, onSaved }) {
   const [reason, setReason] = useState('')
   const [errors, setErrors] = useState({})

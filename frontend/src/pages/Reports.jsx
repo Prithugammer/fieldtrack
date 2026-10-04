@@ -9,6 +9,10 @@ import TopBar from '../components/TopBar'
 import { Alert } from '../components/States'
 import { addDays, formatDate, formatDateTime, formatHours, todayISO } from '../utils/format'
 
+/**
+ * Hours by worker and by job for a date range, flagged entries, and CSV export for payroll.
+ * Hours are computed on the server from clock-in/out, so the tables and the CSV always agree.
+ */
 export default function Reports() {
   const [draft, setDraft] = useState({ from: addDays(todayISO(), -6), to: todayISO() })
   const [range, setRange] = useState(draft)

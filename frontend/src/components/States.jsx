@@ -9,6 +9,9 @@ export function LoadingState({ label = 'Loading…' }) {
   )
 }
 
+/**
+ * Shown when a list has no rows, so an empty table reads as "nothing yet" rather than broken.
+ */
 export function EmptyState({ title = 'Nothing here yet', message, action }) {
   return (
     <div className="state">
@@ -19,6 +22,9 @@ export function EmptyState({ title = 'Nothing here yet', message, action }) {
   )
 }
 
+/**
+ * Shown when a request fails: the server's own message plus a Retry button, never a blank page.
+ */
 export function ErrorState({ message, onRetry }) {
   return (
     <div className="state">
@@ -35,6 +41,10 @@ export function ErrorState({ message, onRetry }) {
   )
 }
 
+/**
+ * Inline banner for success / warning / error messages. Errors use role="alert" so screen
+ * readers announce them; the others use role="status".
+ */
 export function Alert({ tone = 'error', children, onClose }) {
   return (
     <div className={`alert alert--${tone}`} role={tone === 'error' ? 'alert' : 'status'}>

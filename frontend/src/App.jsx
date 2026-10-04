@@ -10,6 +10,10 @@ import Login from './pages/Login'
 import Reports from './pages/Reports'
 import TimeEntries from './pages/TimeEntries'
 
+/**
+ * Route table. Everything except /login sits inside ProtectedRoute + Layout, so a missing or
+ * expired session always lands on the login page, and only staff roles get past it.
+ */
 export default function App() {
   return (
     <Routes>

@@ -14,6 +14,10 @@ import { errorState, formatDate, todayISO } from '../utils/format'
 const STATUSES = ['Scheduled', 'In progress', 'Completed']
 const JOB_FIELDS = ['site_id', 'title', 'description', 'scheduled_date', 'crew_size', 'status']
 
+/**
+ * Dispatcher's schedule: create jobs and assign crews. Double-booking is enforced by the server
+ * (HTTP 409), so the page shows the server's message instead of duplicating the rule here.
+ */
 export default function Jobs() {
   const { hasRole } = useAuth()
   const canEdit = hasRole('Admin', 'Dispatcher')
@@ -161,6 +165,9 @@ export default function Jobs() {
   )
 }
 
+/**
+ * Create or edit a job. created_by is never sent: the server takes it from the login token.
+ */
 function JobFormModal({ job, sites, onClose, onSaved }) {
   const isNew = !job
   const [form, setForm] = useState({

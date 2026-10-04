@@ -29,6 +29,9 @@ const SECTIONS = [
   },
 ]
 
+/**
+ * FieldTrack logo mark (a map pin), shared by the sidebar and the login page.
+ */
 export function BrandMark({ size = 32 }) {
   return (
     <div className="brand-mark" style={{ width: size, height: size }}>
@@ -42,6 +45,10 @@ export function BrandMark({ size = 32 }) {
   )
 }
 
+/**
+ * Main navigation. NavLinks highlight the current page; below 800 px the CSS collapses the
+ * sidebar to icons so the content keeps its width.
+ */
 export default function Sidebar() {
   return (
     <aside className="sidebar">

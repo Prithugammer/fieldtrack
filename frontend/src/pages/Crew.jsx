@@ -19,6 +19,10 @@ const TABS = [
   { key: 'staff', label: 'Staff' },
 ]
 
+/**
+ * People: staff (who log in) and workers (records only). Admins can add, edit and deactivate.
+ * People are deactivated rather than deleted so their past time entries stay intact for payroll.
+ */
 export default function Crew() {
   const { hasRole, user: me } = useAuth()
   const isAdmin = hasRole('Admin')
@@ -148,6 +152,10 @@ export default function Crew() {
   )
 }
 
+/**
+ * Create or edit a user. Staff need a password (they log in); workers need a trade (they are
+ * dispatched by skill). The server enforces both; this form shows its field errors inline.
+ */
 function UserFormModal({ person, onClose, onSaved }) {
   const isNew = !person
   const [form, setForm] = useState({

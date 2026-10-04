@@ -39,6 +39,7 @@ def at(day, hh, mm=0):
 
 
 def seed():
+    """Drop every table, recreate them, and load the demo dataset described above."""
     today = date.today()
     yesterday = today - timedelta(days=1)
     tomorrow = today + timedelta(days=1)

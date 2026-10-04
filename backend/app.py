@@ -59,15 +59,18 @@ def _register_error_handlers(app):
 
     @app.errorhandler(ApiError)
     def handle_api_error(err):
+        """Business-rule and validation errors raised by the routes (400/403/404/409)."""
         return jsonify(err.to_dict()), err.status
 
     @app.errorhandler(HTTPException)
     def handle_http_error(err):
+        """Flask's own errors (unknown URL, wrong method) in the same JSON shape."""
         messages = {404: "That resource was not found.", 405: "Method not allowed for this URL."}
         return jsonify({"error": messages.get(err.code, err.description), "field": None}), err.code
 
     @app.errorhandler(Exception)
     def handle_unexpected(err):
+        """Never leak a stack trace to the browser: log it, roll back, return a generic 500."""
         app.logger.exception(err)
         db.session.rollback()
         return jsonify({"error": "Something went wrong on the server.", "field": None}), 500
@@ -75,14 +78,17 @@ def _register_error_handlers(app):
     # Flask-JWT-Extended: missing / invalid / expired tokens -> 401 JSON.
     @jwt.unauthorized_loader
     def missing_token(reason):
+        """No Authorization header: the UI sends the user to the login page."""
         return jsonify({"error": "Please log in to continue.", "field": None}), 401
 
     @jwt.invalid_token_loader
     def invalid_token(reason):
+        """Malformed or tampered token."""
         return jsonify({"error": "Your session is invalid. Please log in again.", "field": None}), 401
 
     @jwt.expired_token_loader
     def expired_token(header, payload):
+        """Token older than JWT_ACCESS_TOKEN_EXPIRES (one shift by default)."""
         return jsonify({"error": "Your session has expired. Please log in again.", "field": None}), 401
 
 

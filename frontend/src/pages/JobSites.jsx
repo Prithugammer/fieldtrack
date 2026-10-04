@@ -12,6 +12,10 @@ import { errorState } from '../utils/format'
 
 const SITE_FIELDS = ['site_name', 'address', 'latitude', 'longitude', 'geofence_radius_m']
 
+/**
+ * Geolocated job sites. Each site carries the geofence radius its time entries are checked
+ * against, so the radius is data the dispatcher can edit, not a constant in the code.
+ */
 export default function JobSites() {
   const { hasRole } = useAuth()
   const canEdit = hasRole('Admin', 'Dispatcher')
@@ -106,6 +110,9 @@ export default function JobSites() {
   )
 }
 
+/**
+ * Create or edit a site. Coordinates and the 25–5000 m radius are validated on the server.
+ */
 function SiteFormModal({ site, onClose, onSaved }) {
   const isNew = !site
   const [form, setForm] = useState({

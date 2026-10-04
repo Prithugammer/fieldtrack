@@ -14,6 +14,10 @@ const ATTENTION = {
   open_overnight: { icon: IconMoon, tone: 'red', link: '/time-entries', cta: 'Clock out' },
 }
 
+/**
+ * First screen after login: today's KPIs and the three lists a dispatcher acts on (jobs today,
+ * needs attention, unassigned workers), all from a single /api/dashboard call.
+ */
 export default function Dashboard() {
   const { data, loading, error, reload } = useApi('/dashboard')
 

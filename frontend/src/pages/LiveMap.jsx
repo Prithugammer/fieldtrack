@@ -117,6 +117,11 @@ function formatKm(m) {
   return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${m} m`
 }
 
+/**
+ * Stand-in for the future mobile app's live GPS: polls the simulated positions computed by
+ * backend/simulation.py. Simulated (not random) so every demo is repeatable and still shows the
+ * real ideas: geofences, traffic delays, and workers arriving on site.
+ */
 export default function LiveMap() {
   const bounds = useApi('/map/bounds')
   const [live, setLive] = useState(null)
