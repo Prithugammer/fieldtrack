@@ -1,6 +1,8 @@
 import { NavLink } from 'react-router-dom'
 import {
   IconBriefcase,
+  IconChart,
+  IconClock,
   IconDashboard,
   IconPin,
   IconUsers,
@@ -14,6 +16,13 @@ const SECTIONS = [
       { to: '/jobs', label: 'Jobs', icon: IconBriefcase },
       { to: '/sites', label: 'Job Sites', icon: IconPin },
       { to: '/crew', label: 'Crew', icon: IconUsers },
+    ],
+  },
+  {
+    title: 'Time & Pay',
+    links: [
+      { to: '/time-entries', label: 'Time Entries', icon: IconClock },
+      { to: '/reports', label: 'Reports', icon: IconChart },
     ],
   },
 ]

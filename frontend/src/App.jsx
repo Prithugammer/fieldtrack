@@ -6,6 +6,8 @@ import Dashboard from './pages/Dashboard'
 import Jobs from './pages/Jobs'
 import JobSites from './pages/JobSites'
 import Login from './pages/Login'
+import Reports from './pages/Reports'
+import TimeEntries from './pages/TimeEntries'
 
 export default function App() {
   return (
@@ -22,6 +24,8 @@ export default function App() {
         <Route path="jobs" element={<Jobs />} />
         <Route path="sites" element={<JobSites />} />
         <Route path="crew" element={<Crew />} />
+        <Route path="time-entries" element={<TimeEntries />} />
+        <Route path="reports" element={<Reports />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
