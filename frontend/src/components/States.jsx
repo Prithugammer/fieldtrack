@@ -23,7 +23,7 @@ export function EmptyState({ title = 'Nothing here yet', message, action }) {
 }
 
 /**
- * Shown when a request fails: the server's own message plus a Retry button, never a blank page.
+ * Shown when a request fails: the server's own message plus a "Try again" button, never a blank page.
  */
 export function ErrorState({ message, onRetry }) {
   return (

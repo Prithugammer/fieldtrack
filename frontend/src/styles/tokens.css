@@ -31,6 +31,11 @@
   --color-orange-tint: #fff1e5;
   --color-navy-tint: #e8ebf2;
   --color-amber-text: #8a5a00; /* readable text on amber tint */
+  /* Darker text shades for status chips so small text meets WCAG AA (>= 4.5:1) on its tint */
+  --color-green-text: #157c3b;
+  --color-red-text: #c43535;
+  --color-orange-text: #b05300;
+  --color-muted-text: #686f7d;
 
   /* Typography */
   --font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

@@ -594,7 +594,7 @@ textarea.input {
 
 .chip--green {
   background: var(--color-green-tint);
-  color: var(--color-green);
+  color: var(--color-green-text);
 }
 .chip--amber {
   background: var(--color-amber-tint);
@@ -602,11 +602,11 @@ textarea.input {
 }
 .chip--red {
   background: var(--color-red-tint);
-  color: var(--color-red);
+  color: var(--color-red-text);
 }
 .chip--orange {
   background: var(--color-orange-tint);
-  color: var(--color-orange-600);
+  color: var(--color-orange-text);
 }
 .chip--navy {
   background: var(--color-navy-tint);
@@ -614,7 +614,7 @@ textarea.input {
 }
 .chip--muted {
   background: var(--color-bg);
-  color: var(--color-muted);
+  color: var(--color-muted-text);
 }
 
 /* ---------- Data table ---------- */

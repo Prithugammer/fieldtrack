@@ -55,7 +55,9 @@ export default function Sidebar() {
           <div key={section.title}>
             <div className="sidebar__section">{section.title}</div>
             {section.links.map(({ to, label, icon: Icon, end }) => (
-              <NavLink key={to} to={to} end={end} className="sidebar__link">
+              // aria-label/title keep the link named (and give a tooltip) when the narrow
+              // layout hides the text label and shows only the icon.
+              <NavLink key={to} to={to} end={end} className="sidebar__link" aria-label={label} title={label}>
                 <Icon />
                 <span>{label}</span>
               </NavLink>
