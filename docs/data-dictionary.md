@@ -10,11 +10,11 @@ and, where noted, by a database constraint).
 |-------|------|------|----------|-----------------|---------|
 | user_id | Integer | — | Yes (PK, auto) | Auto-increment primary key | `5` |
 | full_name | String | 100 | Yes | 2–100 characters, trimmed | `Marcus Reyes` |
-| email | String | 120 | Yes | Valid email format; **UNIQUE**; stored lower-case | `marcus.reyes@fieldtrack.com` |
+| email | String | 120 | Yes | 5–120 characters, valid email format; **UNIQUE**; stored lower-case | `marcus.reyes@fieldtrack.com` |
 | password_hash | String | 128 | Staff only | bcrypt hash of a password ≥ 8 characters; required for Admin/Dispatcher/Supervisor, NULL for Workers (they do not log in) | `$2b$12$Kx…` |
-| phone | String | 20 | No | Digits, spaces, `+ - ( )` only; 7–20 characters | `416-555-0142` |
+| phone | String | 20 | No | Digits, spaces, `+ - ( ) .` only; 7–20 characters | `416-555-0142` |
 | role | String | 20 | Yes | One of `Admin`, `Dispatcher`, `Supervisor`, `Worker` (CHECK constraint) | `Worker` |
-| trade | String | 50 | Workers only | Required when role = Worker; ≤ 50 characters | `Carpenter` |
+| trade | String | 50 | Workers only | Required when role = Worker; 2–50 characters | `Carpenter` |
 | is_active | Boolean | — | Yes | Default `true`; inactive users cannot log in or be assigned | `true` |
 
 ## job_sites
@@ -22,10 +22,10 @@ and, where noted, by a database constraint).
 | Field | Type | Size | Required | Validation rule | Example |
 |-------|------|------|----------|-----------------|---------|
 | site_id | Integer | — | Yes (PK, auto) | Auto-increment primary key | `1` |
-| site_name | String | 120 | Yes | 2–120 characters | `Riverside Apartments - Phase 2` |
-| address | String | 200 | Yes | 5–200 characters | `720 Queen St E, Toronto, ON` |
-| latitude | Float | — | Yes | −90.0 to 90.0 | `43.659100` |
-| longitude | Float | — | Yes | −180.0 to 180.0 | `-79.350300` |
+| site_name | String | 120 | Yes | 2–120 characters | `Kirtipur Campus Expansion` |
+| address | String | 200 | Yes | 5–200 characters | `Kirtipur Municipality-3, Kathmandu 44618` |
+| latitude | Float | — | Yes | −90.0 to 90.0 | `27.677776` |
+| longitude | Float | — | Yes | −180.0 to 180.0 | `85.287895` |
 | geofence_radius_m | Integer | — | Yes | 25–5000 metres; **DEFAULT 200** | `200` |
 
 ## jobs
@@ -35,7 +35,7 @@ and, where noted, by a database constraint).
 | job_id | Integer | — | Yes (PK, auto) | Auto-increment primary key | `4` |
 | site_id | Integer | — | Yes (FK → job_sites) | Must reference an existing site | `1` |
 | created_by | Integer | — | Yes (FK → users) | Set from the logged-in user's JWT, never from the request body | `2` |
-| title | String | 120 | Yes | 3–120 characters | `Framing – Level 4 walls` |
+| title | String | 120 | Yes | 3–120 characters | `Level 4 framing` |
 | description | Text | 1000 | No | ≤ 1000 characters | `Frame and sheath north and east walls.` |
 | scheduled_date | Date | — | Yes | ISO date `YYYY-MM-DD` | `2026-10-01` |
 | crew_size | Integer | — | Yes | 1–50; cannot be reduced below the number of current assignments | `3` |
@@ -60,10 +60,10 @@ and, where noted, by a database constraint).
 | job_id | Integer | — | Yes (FK → jobs) | Must reference an existing job | `4` |
 | clock_in | DateTime | — | Yes | ISO datetime `YYYY-MM-DDTHH:MM`; must not overlap another entry for the worker | `2026-10-01T07:00` |
 | clock_out | DateTime | — | No | NULL while clocked in; must be **after** clock_in (may be the next calendar day); shift ≤ 24 h | `2026-10-01T15:30` |
-| in_lat | Float | — | Yes | −90.0 to 90.0 | `43.659300` |
-| in_lng | Float | — | Yes | −180.0 to 180.0 | `-79.350000` |
-| out_lat | Float | — | With clock_out | −90.0 to 90.0; required when clock_out is given | `43.659200` |
-| out_lng | Float | — | With clock_out | −180.0 to 180.0; required when clock_out is given | `-79.350100` |
+| in_lat | Float | — | Yes | −90.0 to 90.0 | `27.678046` |
+| in_lng | Float | — | Yes | −180.0 to 180.0 | `85.287895` |
+| out_lat | Float | — | With clock_out | −90.0 to 90.0; required when clock_out is given | `27.677956` |
+| out_lng | Float | — | With clock_out | −180.0 to 180.0; required when clock_out is given | `85.287895` |
 | is_flagged | Boolean | — | Yes | Set by the server: `true` if clock-in or clock-out distance > site geofence radius | `false` |
 | flag_reason | String | 255 | No | Set by the server when flagged | `Clock-in 500 m from site (limit 200 m)` |
 | status | String | 20 | Yes | One of `Pending`, `Approved`, `Rejected` (CHECK); default `Pending` | `Approved` |
@@ -79,6 +79,6 @@ and, where noted, by a database constraint).
 |-------|------|------|----------|-----------------|---------|
 | ping_id | Integer | — | Yes (PK, auto) | Auto-increment primary key | `40` |
 | user_id | Integer | — | Yes (FK → users) | Worker the coordinate belongs to | `5` |
-| latitude | Float | — | Yes | −90.0 to 90.0 | `43.659300` |
-| longitude | Float | — | Yes | −180.0 to 180.0 | `-79.350000` |
+| latitude | Float | — | Yes | −90.0 to 90.0 | `27.678046` |
+| longitude | Float | — | Yes | −180.0 to 180.0 | `85.287895` |
 | recorded_at | DateTime | — | Yes | Timestamp of the clock-in or clock-out the ping came from | `2026-10-01T07:00:00` |

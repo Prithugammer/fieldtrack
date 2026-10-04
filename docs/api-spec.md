@@ -36,7 +36,7 @@ about a single field.
 - **Errors:** 400 (`email`/`password` missing), 401 invalid credentials, 403 account deactivated or Worker account.
 
 ### GET /auth/me
-- **Role:** any authenticated user
+- **Role:** Staff (Workers can never obtain a token)
 - **200:** `{ "user": { ... } }`
 - **Errors:** 401, 403 (deactivated since login)
 
@@ -57,9 +57,9 @@ about a single field.
 
 ### PATCH /users/{user_id}
 - **Role:** Admin
-- **Body (any subset):** `{ "full_name", "phone", "role", "trade", "is_active", "password" }`
+- **Body (any subset):** `{ "full_name", "email", "phone", "role", "trade", "is_active", "password" }`
 - **200:** `{ "user": { ... } }`
-- **Errors:** 400, 404, 409 (admin tries to deactivate or demote their own account).
+- **Errors:** 400, 404, 409 (email already used by another user; admin tries to deactivate or demote their own account).
 
 ---
 
@@ -88,7 +88,7 @@ about a single field.
 ### GET /jobs
 - **Role:** Staff
 - **Query:** `date` (`YYYY-MM-DD`), `status` (`Scheduled` | `In progress` | `Completed`), `site_id` — all optional
-- **200:** `{ "jobs": [ { "job_id", "title", "description", "scheduled_date", "crew_size", "status", "site_id", "site_name", "created_by", "created_by_name", "assigned_count", "crew": [ { "assignment_id", "user_id", "full_name", "trade" } ] } ] }`
+- **200:** `{ "jobs": [ { "job_id", "title", "description", "scheduled_date", "crew_size", "status", "site_id", "site_name", "site_address", "created_by", "created_by_name", "assigned_count", "crew": [ { "assignment_id", "user_id", "full_name", "trade" } ] } ] }`
 - **Errors:** 400 invalid date/status filter
 
 ### GET /jobs/{job_id}
@@ -123,7 +123,8 @@ about a single field.
 - **Errors:**
   - 400 missing/invalid field; worker inactive or not a Worker (`field: "user_id"`)
   - 404 job or user not found
-  - **409 double-booking** — `{ "error": "Marcus Reyes is already assigned to 'Framing – Level 4 walls' at Riverside Apartments - Phase 2 on 2026-10-01.", "field": "user_id" }`
+  - **409 double-booking** — `{ "error": "Marcus Reyes is already assigned to 'Level 4 framing' at Kirtipur Campus Expansion on 2026-10-01. A worker can only be booked on one job per day.", "field": "user_id" }`
+  - 409 worker already on this job's crew (`field: "user_id"`)
   - 409 crew full / job completed
 
 ### DELETE /assignments/{assignment_id}
@@ -140,10 +141,10 @@ Each time entry in a response looks like:
 ```json
 {
   "entry_id": 21, "user_id": 12, "worker_name": "Ben Okafor", "trade": "Laborer",
-  "job_id": 9, "job_title": "Level 4 drywall prep", "site_id": 1, "site_name": "Riverside Apartments - Phase 2",
+  "job_id": 9, "job_title": "Level 4 drywall prep", "site_id": 1, "site_name": "Kirtipur Campus Expansion",
   "clock_in": "2026-10-01T07:00:00", "clock_out": "2026-10-01T11:30:00",
-  "in_lat": 43.6593, "in_lng": -79.35, "out_lat": 43.6592, "out_lng": -79.3501,
-  "in_distance_m": 30.6, "out_distance_m": 20.3, "geofence_radius_m": 200,
+  "in_lat": 27.678046, "in_lng": 85.287895, "out_lat": 27.677956, "out_lng": 85.287895,
+  "in_distance_m": 30.0, "out_distance_m": 20.0, "geofence_radius_m": 200,
   "hours": 4.5, "is_flagged": false, "flag_reason": null,
   "status": "Pending", "approved_by": null, "approved_by_name": null, "edit_reason": null
 }
@@ -153,7 +154,7 @@ Each time entry in a response looks like:
 
 ### GET /time-entries
 - **Role:** Staff
-- **Query:** `status` (`Pending`|`Approved`|`Rejected`), `flagged` (`true`/`false`), `worker` (user_id), `date` (clock-in date) — all optional
+- **Query:** `status` (`Pending`|`Approved`|`Rejected`), `flagged` (`true`/`false`), `worker` (user_id), `job_id`, `date` (clock-in date) — all optional
 - **200:** `{ "time_entries": [ ... ] }` newest first
 
 ### POST /time-entries
@@ -186,6 +187,7 @@ count toward hours, and **Rejected entries are excluded**.
 ### GET /reports/hours-by-worker
 - **Role:** Staff
 - **200:** `{ "from", "to", "rows": [ { "user_id", "full_name", "trade", "entries", "total_hours", "approved_hours", "pending_hours", "flagged_entries" } ], "total_hours" }`
+- `entries` counts only the entries that count toward hours; `flagged_entries` counts every flagged entry in range (any status, open or closed).
 
 ### GET /reports/hours-by-job
 - **Role:** Staff
@@ -218,4 +220,52 @@ count toward hours, and **Rejected entries are excluded**.
   "needs_attention": [ { "type": "flagged_entry" | "understaffed_job" | "open_overnight", "message": "...", "ref_id": 17 } ]
 }
 ```
-- `active_jobs` = jobs scheduled today that are not Completed; `hours_today` includes open entries up to now.
+- `active_jobs` = jobs scheduled today that are not Completed; `workers_clocked_in` = workers with an open entry (no clock-out);
+  `hours_today` includes open entries up to now and excludes Rejected; `flagged_entries` counts flagged entries that are still **Pending**
+  (approved/rejected ones drop off), and `needs_attention` lists those same entries.
+
+---
+
+## Live Map (simulated GPS)
+
+There is no mobile app yet, so worker positions are **simulated** (`backend/simulation.py`).
+Every response is computed from the server clock: nothing is written to the database and no
+background thread runs. Real time loops through a simulated **6:00–7:15 AM** commute window
+every **5 real minutes**. Each worker assigned to a job today follows a fixed route for the
+day (seeded by user_id + date) from a landmark a few km away, through up to 2 landmark
+waypoints, to their job site; the whole route is at most 1.3x the straight-line distance. Near a traffic hotspot (Koteshwor, Kalanki, Chabahil, Gongabu)
+they move at that junction's `speed_multiplier`.
+
+### GET /map/live
+- **Role:** Staff
+- **200:**
+```json
+{
+  "sim_time": "6:42 AM",
+  "cycle": 5970324,
+  "job_sites": [
+    { "id": 1, "name": "Kirtipur Campus Expansion", "address": "...", "lat": 27.677776, "lng": 85.287895,
+      "radius_m": 200, "jobs_today": ["Level 4 framing"] }
+  ],
+  "workers": [
+    { "id": 6, "name": "Dana Whitfield", "trade": "Electrician", "status": "In transit",
+      "lat": 27.72041, "lng": 85.34712, "job_title": "Level 3 rough-in (electrical & plumbing)",
+      "site_name": "Boudha Stupa Plaza Retrofit", "near_traffic": true, "hotspot": "Chabahil",
+      "distance_remaining_m": 1240 }
+  ]
+}
+```
+- `status` is `Not started` (assigned today, hasn't left yet: `lat`/`lng` are `null`), `In transit`,
+  `On site` (within ~30 m of the site centre), or `Off duty` (no assignment today: a fixed point
+  near a landmark, shown greyed out and never moving).
+- `cycle` increases each time the simulated window restarts. The UI uses it to reset markers
+  instead of animating them back to their start points.
+
+### GET /map/sim-clock
+- **Role:** Staff
+- **200:** `{ "sim_time": "6:42 AM", "sim_minutes": 402.5, "window_start": "6:00 AM", "window_end": "7:15 AM", "cycle_seconds": 300, "cycle": 5970324, "seconds_to_reset": 137.4 }`
+- `seconds_to_reset` = real seconds until the window restarts at 6:00 AM (drives the UI's "New cycle in" countdown).
+
+### GET /map/bounds
+- **Role:** Staff
+- **200:** `{ "south": 27.6, "west": 85.2, "north": 27.8, "east": 85.45, "traffic_hotspots": [ { "name": "Koteshwor", "lat": 27.6775, "lng": 85.3485, "radius_m": 700, "speed_multiplier": 0.25 }, ... ] }`
