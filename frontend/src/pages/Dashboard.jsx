@@ -65,10 +65,30 @@ export default function Dashboard() {
         {data && (
           <>
             <div className="kpi-grid">
-              <KpiCard label="Active jobs" value={data.kpis.active_jobs} hint="Scheduled today, not completed" tone="navy" />
-              <KpiCard label="Workers clocked in" value={data.kpis.workers_clocked_in} hint="Open time entries right now" tone="orange" />
-              <KpiCard label="Hours logged today" value={data.kpis.hours_today.toFixed(1)} hint="Includes shifts in progress" tone="green" />
-              <KpiCard label="Flagged entries" value={data.kpis.flagged_entries} hint="Outside geofence, awaiting review" tone="amber" />
+              <KpiCard
+                label="Active jobs"
+                value={data.kpis.active_jobs}
+                hint="Scheduled today, not completed"
+                tone="navy"
+              />
+              <KpiCard
+                label="Workers clocked in"
+                value={data.kpis.workers_clocked_in}
+                hint="Open time entries right now"
+                tone="orange"
+              />
+              <KpiCard
+                label="Hours logged today"
+                value={data.kpis.hours_today.toFixed(1)}
+                hint="Includes shifts in progress"
+                tone="green"
+              />
+              <KpiCard
+                label="Flagged entries"
+                value={data.kpis.flagged_entries}
+                hint="Outside geofence, awaiting review"
+                tone="amber"
+              />
             </div>
 
             <div className="grid-2">

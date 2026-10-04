@@ -6,6 +6,7 @@ e.g. job.assignments and assignment.job.
 Hours are NEVER stored. TimeEntry.hours() computes them from clock_in and clock_out each
 time they are needed, so they can never drift out of sync with the times.
 """
+
 from datetime import datetime
 
 import bcrypt
@@ -124,9 +125,7 @@ class Job(db.Model):
 
     site = db.relationship("JobSite", back_populates="jobs")
     creator = db.relationship("User", back_populates="jobs_created")
-    assignments = db.relationship(
-        "Assignment", back_populates="job", cascade="all, delete-orphan"
-    )
+    assignments = db.relationship("Assignment", back_populates="job", cascade="all, delete-orphan")
     time_entries = db.relationship("TimeEntry", back_populates="job")
 
     def assigned_count(self):
@@ -218,7 +217,9 @@ class TimeEntry(db.Model):
 
     worker = db.relationship("User", back_populates="time_entries", foreign_keys=[user_id])
     job = db.relationship("Job", back_populates="time_entries")
-    approver = db.relationship("User", back_populates="approved_entries", foreign_keys=[approved_by])
+    approver = db.relationship(
+        "User", back_populates="approved_entries", foreign_keys=[approved_by]
+    )
 
     def hours(self):
         """Hours worked, computed (never stored). None while still clocked in.

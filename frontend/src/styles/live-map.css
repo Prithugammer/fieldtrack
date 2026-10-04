@@ -66,11 +66,15 @@
 }
 
 @keyframes ft-fade-out {
-  to { opacity: 0; }
+  to {
+    opacity: 0;
+  }
 }
 
 @keyframes ft-fade-in {
-  from { opacity: 0; }
+  from {
+    opacity: 0;
+  }
 }
 
 .live-map__reset {
@@ -124,12 +128,18 @@
   flex-shrink: 0;
 }
 
-.ft-worker--onsite { background: var(--color-green); }
-.ft-worker--transit { background: var(--color-amber); }
+.ft-worker--onsite {
+  background: var(--color-green);
+}
+.ft-worker--transit {
+  background: var(--color-amber);
+}
 .ft-worker--traffic {
   background: var(--color-amber);
   border-color: var(--color-orange);
-  box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.45), 0 1px 3px rgba(20, 33, 61, 0.45);
+  box-shadow:
+    0 0 0 3px rgba(255, 122, 0, 0.45),
+    0 1px 3px rgba(20, 33, 61, 0.45);
 }
 .ft-worker--off {
   background: var(--color-muted);

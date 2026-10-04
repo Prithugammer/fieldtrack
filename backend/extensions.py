@@ -1,4 +1,5 @@
 """Shared Flask extension objects, created once and bound to the app in create_app()."""
+
 import sqlite3
 
 from flask_jwt_extended import JWTManager

@@ -120,10 +120,18 @@ export default function Jobs() {
                 ))}
               </select>
             </FormField>
-            <button type="button" className="btn btn--secondary" onClick={() => setFilters({ date: todayISO(), status: '' })}>
+            <button
+              type="button"
+              className="btn btn--secondary"
+              onClick={() => setFilters({ date: todayISO(), status: '' })}
+            >
               Today
             </button>
-            <button type="button" className="btn btn--ghost" onClick={() => setFilters({ date: '', status: '' })}>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => setFilters({ date: '', status: '' })}
+            >
               Clear filters
             </button>
           </div>
@@ -236,16 +244,48 @@ function JobFormModal({ job, sites, onClose, onSaved }) {
             </select>
           </FormField>
           <FormField label="Title" htmlFor="job-title" error={errors.title} required className="span-2">
-            <input id="job-title" className="input" value={form.title} onChange={set('title')} placeholder="e.g. Level 5 framing" />
+            <input
+              id="job-title"
+              className="input"
+              value={form.title}
+              onChange={set('title')}
+              placeholder="e.g. Level 5 framing"
+            />
           </FormField>
           <FormField label="Description" htmlFor="job-desc" error={errors.description} className="span-2">
-            <textarea id="job-desc" className="input" value={form.description} onChange={set('description')} rows={3} />
+            <textarea
+              id="job-desc"
+              className="input"
+              value={form.description}
+              onChange={set('description')}
+              rows={3}
+            />
           </FormField>
           <FormField label="Scheduled date" htmlFor="job-date" error={errors.scheduled_date} required>
-            <input id="job-date" type="date" className="input" value={form.scheduled_date} onChange={set('scheduled_date')} />
+            <input
+              id="job-date"
+              type="date"
+              className="input"
+              value={form.scheduled_date}
+              onChange={set('scheduled_date')}
+            />
           </FormField>
-          <FormField label="Crew size" htmlFor="job-crew" error={errors.crew_size} required hint="1–50 workers">
-            <input id="job-crew" type="number" min="1" max="50" className="input" value={form.crew_size} onChange={set('crew_size')} />
+          <FormField
+            label="Crew size"
+            htmlFor="job-crew"
+            error={errors.crew_size}
+            required
+            hint="1–50 workers"
+          >
+            <input
+              id="job-crew"
+              type="number"
+              min="1"
+              max="50"
+              className="input"
+              value={form.crew_size}
+              onChange={set('crew_size')}
+            />
           </FormField>
           <FormField label="Status" htmlFor="job-status" error={errors.status} required>
             <select id="job-status" className="input" value={form.status} onChange={set('status')}>
@@ -387,7 +427,8 @@ function AssignModal({ jobId, onClose }) {
                 {job.crew.map((c) => (
                   <li key={c.assignment_id}>
                     <span>
-                      <span className="strong">{c.full_name}</span> <span className="muted small">· {c.trade}</span>
+                      <span className="strong">{c.full_name}</span>{' '}
+                      <span className="muted small">· {c.trade}</span>
                     </span>
                     <button
                       type="button"

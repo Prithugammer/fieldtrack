@@ -206,7 +206,12 @@ export default function TimeEntries() {
               </select>
             </FormField>
             <FormField label="Geofence" htmlFor="te-flagged">
-              <select id="te-flagged" className="input" value={filters.flagged} onChange={setFilter('flagged')}>
+              <select
+                id="te-flagged"
+                className="input"
+                value={filters.flagged}
+                onChange={setFilter('flagged')}
+              >
                 <option value="">All entries</option>
                 <option value="true">Flagged only</option>
                 <option value="false">Not flagged</option>
@@ -223,7 +228,13 @@ export default function TimeEntries() {
               </select>
             </FormField>
             <FormField label="Clock-in date" htmlFor="te-date">
-              <input id="te-date" type="date" className="input" value={filters.date} onChange={setFilter('date')} />
+              <input
+                id="te-date"
+                type="date"
+                className="input"
+                value={filters.date}
+                onChange={setFilter('date')}
+              />
             </FormField>
             <button
               type="button"
@@ -353,7 +364,11 @@ function RecordEntryModal({ workers, siteById, onClose, onSaved }) {
       in_lng: num(form.in_lng),
     }
     if (form.clock_out) {
-      Object.assign(body, { clock_out: form.clock_out, out_lat: num(form.out_lat), out_lng: num(form.out_lng) })
+      Object.assign(body, {
+        clock_out: form.clock_out,
+        out_lat: num(form.out_lat),
+        out_lng: num(form.out_lng),
+      })
     }
     try {
       const res = await api('/time-entries', { method: 'POST', body })
@@ -396,7 +411,13 @@ function RecordEntryModal({ workers, siteById, onClose, onSaved }) {
             </select>
           </FormField>
           <FormField label="Clock-in" htmlFor="e-in" error={errors.clock_in} required>
-            <input id="e-in" type="datetime-local" className="input" value={form.clock_in} onChange={set('clock_in')} />
+            <input
+              id="e-in"
+              type="datetime-local"
+              className="input"
+              value={form.clock_in}
+              onChange={set('clock_in')}
+            />
           </FormField>
           <FormField
             label="Job"
@@ -407,7 +428,9 @@ function RecordEntryModal({ workers, siteById, onClose, onSaved }) {
             hint={workDate ? `Jobs scheduled on ${formatDate(workDate)}` : undefined}
           >
             <select id="e-job" className="input" value={form.job_id} onChange={set('job_id')}>
-              <option value="">{jobs.loading ? 'Loading jobs…' : jobList.length ? 'Select a job…' : 'No jobs on this date'}</option>
+              <option value="">
+                {jobs.loading ? 'Loading jobs…' : jobList.length ? 'Select a job…' : 'No jobs on this date'}
+              </option>
               {jobList.map((j) => (
                 <option key={j.job_id} value={j.job_id}>
                   {j.title} — {j.site_name}
@@ -419,17 +442,32 @@ function RecordEntryModal({ workers, siteById, onClose, onSaved }) {
 
         {site && (
           <div className="info-box">
-            <strong>{site.site_name}</strong> is at {site.latitude.toFixed(6)}, {site.longitude.toFixed(6)} with a{' '}
-            <strong>{site.geofence_radius_m} m</strong> geofence. Readings farther than that are saved but flagged.
+            <strong>{site.site_name}</strong> is at {site.latitude.toFixed(6)}, {site.longitude.toFixed(6)}{' '}
+            with a <strong>{site.geofence_radius_m} m</strong> geofence. Readings farther than that are saved
+            but flagged.
           </div>
         )}
 
         <div className="form-grid">
           <FormField label="Clock-in latitude" htmlFor="e-inlat" error={errors.in_lat} required>
-            <input id="e-inlat" type="number" step="0.000001" className="input" value={form.in_lat} onChange={set('in_lat')} />
+            <input
+              id="e-inlat"
+              type="number"
+              step="0.000001"
+              className="input"
+              value={form.in_lat}
+              onChange={set('in_lat')}
+            />
           </FormField>
           <FormField label="Clock-in longitude" htmlFor="e-inlng" error={errors.in_lng} required>
-            <input id="e-inlng" type="number" step="0.000001" className="input" value={form.in_lng} onChange={set('in_lng')} />
+            <input
+              id="e-inlng"
+              type="number"
+              step="0.000001"
+              className="input"
+              value={form.in_lng}
+              onChange={set('in_lng')}
+            />
           </FormField>
           <div className="span-2">
             <GpsHelper site={site} onPick={({ lat, lng }) => update({ in_lat: lat, in_lng: lng })} />
@@ -444,15 +482,35 @@ function RecordEntryModal({ workers, siteById, onClose, onSaved }) {
             className="span-2"
             hint="Leave blank if the worker is still on shift. A shift may end the next day."
           >
-            <input id="e-out" type="datetime-local" className="input" value={form.clock_out} onChange={set('clock_out')} />
+            <input
+              id="e-out"
+              type="datetime-local"
+              className="input"
+              value={form.clock_out}
+              onChange={set('clock_out')}
+            />
           </FormField>
           {form.clock_out && (
             <>
               <FormField label="Clock-out latitude" htmlFor="e-outlat" error={errors.out_lat} required>
-                <input id="e-outlat" type="number" step="0.000001" className="input" value={form.out_lat} onChange={set('out_lat')} />
+                <input
+                  id="e-outlat"
+                  type="number"
+                  step="0.000001"
+                  className="input"
+                  value={form.out_lat}
+                  onChange={set('out_lat')}
+                />
               </FormField>
               <FormField label="Clock-out longitude" htmlFor="e-outlng" error={errors.out_lng} required>
-                <input id="e-outlng" type="number" step="0.000001" className="input" value={form.out_lng} onChange={set('out_lng')} />
+                <input
+                  id="e-outlng"
+                  type="number"
+                  step="0.000001"
+                  className="input"
+                  value={form.out_lng}
+                  onChange={set('out_lng')}
+                />
               </FormField>
               <div className="span-2">
                 <GpsHelper site={site} onPick={({ lat, lng }) => update({ out_lat: lat, out_lng: lng })} />
@@ -532,10 +590,24 @@ function ClockOutModal({ entry, site, onClose, onSaved }) {
         </FormField>
         <div className="form-grid">
           <FormField label="Latitude" htmlFor="co-lat" error={errors.out_lat} required>
-            <input id="co-lat" type="number" step="0.000001" className="input" value={form.out_lat} onChange={(e) => update({ out_lat: e.target.value })} />
+            <input
+              id="co-lat"
+              type="number"
+              step="0.000001"
+              className="input"
+              value={form.out_lat}
+              onChange={(e) => update({ out_lat: e.target.value })}
+            />
           </FormField>
           <FormField label="Longitude" htmlFor="co-lng" error={errors.out_lng} required>
-            <input id="co-lng" type="number" step="0.000001" className="input" value={form.out_lng} onChange={(e) => update({ out_lng: e.target.value })} />
+            <input
+              id="co-lng"
+              type="number"
+              step="0.000001"
+              className="input"
+              value={form.out_lng}
+              onChange={(e) => update({ out_lng: e.target.value })}
+            />
           </FormField>
         </div>
         <GpsHelper site={site} onPick={({ lat, lng }) => update({ out_lat: lat, out_lng: lng })} />
@@ -594,12 +666,19 @@ function DecisionModal({ entry, decision, onClose, onSaved }) {
       <div className="info-box">
         <strong>{entry.worker_name}</strong> · {entry.job_title}
         <br />
-        {formatDateTime(entry.clock_in)} → {formatDateTime(entry.clock_out)} · <strong>{formatHours(entry.hours)}</strong>
+        {formatDateTime(entry.clock_in)} → {formatDateTime(entry.clock_out)} ·{' '}
+        <strong>{formatHours(entry.hours)}</strong>
       </div>
       {entry.is_flagged && <Alert tone="warning">⚑ Flagged: {entry.flag_reason}</Alert>}
       <form id="decision-form" className="form" onSubmit={submit} noValidate>
         {errors._form && <Alert>{errors._form}</Alert>}
-        <FormField label="Reason" htmlFor="d-reason" error={errors.edit_reason} required hint="Saved with your name as the audit trail.">
+        <FormField
+          label="Reason"
+          htmlFor="d-reason"
+          error={errors.edit_reason}
+          required
+          hint="Saved with your name as the audit trail."
+        >
           <textarea
             id="d-reason"
             className="input"
@@ -609,7 +688,11 @@ function DecisionModal({ entry, decision, onClose, onSaved }) {
               setReason(e.target.value)
               setErrors({})
             }}
-            placeholder={approving ? 'e.g. Foreman confirmed worker was in the site trailer' : 'e.g. Worker was not on site'}
+            placeholder={
+              approving
+                ? 'e.g. Foreman confirmed worker was in the site trailer'
+                : 'e.g. Worker was not on site'
+            }
           />
         </FormField>
       </form>

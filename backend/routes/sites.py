@@ -1,4 +1,5 @@
 """Job sites: the geolocated places where jobs happen, each with a geofence radius."""
+
 from flask import Blueprint, current_app, jsonify
 
 from auth import role_required
@@ -20,7 +21,9 @@ MAX_RADIUS_M = 5000
 
 
 def _radius(value, required):
-    return parse_int(value, "geofence_radius_m", "Geofence radius", MIN_RADIUS_M, MAX_RADIUS_M, required)
+    return parse_int(
+        value, "geofence_radius_m", "Geofence radius", MIN_RADIUS_M, MAX_RADIUS_M, required
+    )
 
 
 @sites_bp.get("")

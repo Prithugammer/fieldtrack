@@ -17,6 +17,7 @@ site centre:
 We never throw an entry away for being outside the circle: GPS drifts, people clock in from
 the site trailer, and the company must pay for time actually worked. A human decides.
 """
+
 import math
 
 # Mean radius of the Earth in metres (the value used by most GPS/haversine calculators).

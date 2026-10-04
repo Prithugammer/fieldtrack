@@ -1,4 +1,5 @@
 """Crew assignments: which worker is on which job on which day."""
+
 from flask import Blueprint, jsonify, request
 from sqlalchemy.exc import IntegrityError
 

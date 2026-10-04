@@ -1,4 +1,5 @@
 """User management: staff accounts and worker records."""
+
 from flask import Blueprint, g, jsonify, request
 
 from auth import role_required
@@ -47,15 +48,15 @@ def create_user():
     email = validate_email(data.get("email"))
     phone = validate_phone(data.get("phone"))
     role = one_of(data.get("role"), "role", "Role", ROLES)
-    trade = require_str(
-        data.get("trade"), "trade", "Trade", 2, 50, required=(role == "Worker")
-    )
+    trade = require_str(data.get("trade"), "trade", "Trade", 2, 50, required=(role == "Worker"))
     password = _validate_password(data.get("password"), required=(role in STAFF_ROLES))
 
     if User.query.filter_by(email=email).first():
         raise ApiError(f"A user with email {email} already exists.", "email", status=409)
 
-    user = User(full_name=full_name, email=email, phone=phone, role=role, trade=trade, is_active=True)
+    user = User(
+        full_name=full_name, email=email, phone=phone, role=role, trade=trade, is_active=True
+    )
     if password and role in STAFF_ROLES:
         user.set_password(password)
     db.session.add(user)

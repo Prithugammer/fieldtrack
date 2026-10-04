@@ -1,13 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import {
-  IconBriefcase,
-  IconChart,
-  IconClock,
-  IconDashboard,
-  IconMap,
-  IconPin,
-  IconUsers,
-} from './Icons'
+import { IconBriefcase, IconChart, IconClock, IconDashboard, IconMap, IconPin, IconUsers } from './Icons'
 
 const SECTIONS = [
   {

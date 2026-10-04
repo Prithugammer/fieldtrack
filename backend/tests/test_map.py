@@ -1,4 +1,5 @@
 """Live Map simulation: deterministic, read-only, and always showing movement."""
+
 from datetime import date, timedelta
 from types import SimpleNamespace
 
@@ -9,7 +10,12 @@ from models import LocationPing, TimeEntry
 
 DAY = date(2026, 10, 1)
 # Six workers at four sites spread across the valley (like the demo seed).
-SITES = [LANDMARKS["Kirtipur"], LANDMARKS["Koteshwor"], LANDMARKS["Boudhanath"], LANDMARKS["Gongabu"]]
+SITES = [
+    LANDMARKS["Kirtipur"],
+    LANDMARKS["Koteshwor"],
+    LANDMARKS["Boudhanath"],
+    LANDMARKS["Gongabu"],
+]
 CREW = [(uid, SITES[uid % 4]) for uid in range(5, 11)]
 
 
@@ -20,7 +26,9 @@ def plan(day=DAY, crew=CREW):
 
 
 def positions(routes, minute):
-    return [sim.get_worker_position(SimpleNamespace(user_id=u), r, minute) for u, r in routes.items()]
+    return [
+        sim.get_worker_position(SimpleNamespace(user_id=u), r, minute) for u, r in routes.items()
+    ]
 
 
 def test_random_point_near_stays_within_offset():
@@ -103,8 +111,12 @@ def test_live_map_endpoint_is_read_only(client, dispatcher_headers):
     res = client.get("/api/map/live", headers=dispatcher_headers)
     assert res.status_code == 200
     data = res.get_json()
-    assert data["job_sites"] and {"id", "name", "lat", "lng", "radius_m"} <= set(data["job_sites"][0])
-    assert {"id", "name", "trade", "lat", "lng", "status", "job_title", "near_traffic"} <= set(data["workers"][0])
+    assert data["job_sites"] and {"id", "name", "lat", "lng", "radius_m"} <= set(
+        data["job_sites"][0]
+    )
+    assert {"id", "name", "trade", "lat", "lng", "status", "job_title", "near_traffic"} <= set(
+        data["workers"][0]
+    )
     assert (TimeEntry.query.count(), LocationPing.query.count()) == before
     for path in ("/api/map/sim-clock", "/api/map/bounds"):
         assert client.get(path, headers=dispatcher_headers).status_code == 200

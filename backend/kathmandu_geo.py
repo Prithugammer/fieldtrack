@@ -3,6 +3,7 @@
 Real landmark coordinates are used as road waypoints and job-site anchors so the simulated
 worker routes look grounded on the map. Nothing here touches the database.
 """
+
 import math
 import random
 

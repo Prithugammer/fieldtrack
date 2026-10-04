@@ -1,4 +1,5 @@
 """Jobs: a piece of work at a site on a scheduled date, with a planned crew size."""
+
 from flask import Blueprint, g, jsonify, request
 
 from auth import role_required

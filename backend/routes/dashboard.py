@@ -1,4 +1,5 @@
 """Dashboard: today's KPIs and the lists a dispatcher/supervisor checks first thing."""
+
 from datetime import date, datetime
 
 from flask import Blueprint, jsonify

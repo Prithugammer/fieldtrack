@@ -3,6 +3,7 @@
 Every setting can be overridden with an environment variable (or a backend/.env file — see
 .env.example). The defaults are for running locally; set real secrets anywhere else.
 """
+
 import os
 from datetime import timedelta
 

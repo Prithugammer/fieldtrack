@@ -65,8 +65,7 @@ export default function Login() {
             Dispatch crews. Verify hours. <span className="brand-accent">Know they were on site.</span>
           </h1>
           <p className="login__tagline">
-            The administrative portal for scheduling jobs, assigning crews and approving
-            GPS-verified time.
+            The administrative portal for scheduling jobs, assigning crews and approving GPS-verified time.
           </p>
           <ul className="login__features">
             {[

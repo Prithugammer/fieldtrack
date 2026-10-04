@@ -1,4 +1,5 @@
 """Authentication: login, current user, and the @role_required decorator."""
+
 from functools import wraps
 
 from flask import Blueprint, g, jsonify

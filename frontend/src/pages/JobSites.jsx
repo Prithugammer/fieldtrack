@@ -49,7 +49,12 @@ export default function JobSites() {
       align: 'right',
       render: (s) => <span className="num">{s.geofence_radius_m} m</span>,
     },
-    { key: 'job_count', header: 'Jobs', align: 'right', render: (s) => <span className="num">{s.job_count}</span> },
+    {
+      key: 'job_count',
+      header: 'Jobs',
+      align: 'right',
+      render: (s) => <span className="num">{s.job_count}</span>,
+    },
     {
       key: 'actions',
       header: '',
@@ -164,17 +169,55 @@ function SiteFormModal({ site, onClose, onSaved }) {
       <form id="site-form" className="form" onSubmit={submit} noValidate>
         {errors._form && <Alert>{errors._form}</Alert>}
         <div className="form-grid">
-          <FormField label="Site name" htmlFor="site-name" error={errors.site_name} required className="span-2">
+          <FormField
+            label="Site name"
+            htmlFor="site-name"
+            error={errors.site_name}
+            required
+            className="span-2"
+          >
             <input id="site-name" className="input" value={form.site_name} onChange={set('site_name')} />
           </FormField>
-          <FormField label="Address" htmlFor="site-address" error={errors.address} required className="span-2">
+          <FormField
+            label="Address"
+            htmlFor="site-address"
+            error={errors.address}
+            required
+            className="span-2"
+          >
             <input id="site-address" className="input" value={form.address} onChange={set('address')} />
           </FormField>
-          <FormField label="Latitude" htmlFor="site-lat" error={errors.latitude} required hint="−90 to 90, e.g. 43.659100">
-            <input id="site-lat" type="number" step="0.000001" className="input" value={form.latitude} onChange={set('latitude')} />
+          <FormField
+            label="Latitude"
+            htmlFor="site-lat"
+            error={errors.latitude}
+            required
+            hint="−90 to 90, e.g. 43.659100"
+          >
+            <input
+              id="site-lat"
+              type="number"
+              step="0.000001"
+              className="input"
+              value={form.latitude}
+              onChange={set('latitude')}
+            />
           </FormField>
-          <FormField label="Longitude" htmlFor="site-lng" error={errors.longitude} required hint="−180 to 180, e.g. -79.350300">
-            <input id="site-lng" type="number" step="0.000001" className="input" value={form.longitude} onChange={set('longitude')} />
+          <FormField
+            label="Longitude"
+            htmlFor="site-lng"
+            error={errors.longitude}
+            required
+            hint="−180 to 180, e.g. -79.350300"
+          >
+            <input
+              id="site-lng"
+              type="number"
+              step="0.000001"
+              className="input"
+              value={form.longitude}
+              onChange={set('longitude')}
+            />
           </FormField>
           <FormField
             label="Geofence radius (m)"
@@ -184,7 +227,15 @@ function SiteFormModal({ site, onClose, onSaved }) {
             hint="Clock-ins farther than this from the site are flagged (25–5000 m)."
             className="span-2"
           >
-            <input id="site-radius" type="number" min="25" max="5000" className="input" value={form.geofence_radius_m} onChange={set('geofence_radius_m')} />
+            <input
+              id="site-radius"
+              type="number"
+              min="25"
+              max="5000"
+              className="input"
+              value={form.geofence_radius_m}
+              onChange={set('geofence_radius_m')}
+            />
           </FormField>
         </div>
       </form>

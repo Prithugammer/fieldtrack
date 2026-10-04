@@ -1,0 +1,5 @@
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+# black already skips .venv, build and cache folders; also skip the local database folder
+extend-exclude = "instance"

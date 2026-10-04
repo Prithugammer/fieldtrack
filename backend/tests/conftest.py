@@ -1,4 +1,5 @@
 """Shared pytest fixtures: a fresh in-memory database with a small known dataset."""
+
 from datetime import date
 
 import pytest
@@ -39,17 +40,39 @@ def _load_fixture_data():
     supervisor = staff("Test Supervisor", "super@test.com", "Supervisor")
     w1 = User(full_name="Marcus Reyes", email="marcus@test.com", role="Worker", trade="Carpenter")
     w2 = User(full_name="Ben Okafor", email="ben@test.com", role="Worker", trade="Laborer")
-    site = JobSite(site_name="Riverside Apartments - Phase 2", address="720 Queen St E, Toronto",
-                   latitude=43.6591, longitude=-79.3503, geofence_radius_m=200)
-    other_site = JobSite(site_name="Tanner Bridge Deck Pour", address="Tanner Rd, Markham",
-                         latitude=43.8573, longitude=-79.3395, geofence_radius_m=250)
+    site = JobSite(
+        site_name="Riverside Apartments - Phase 2",
+        address="720 Queen St E, Toronto",
+        latitude=43.6591,
+        longitude=-79.3503,
+        geofence_radius_m=200,
+    )
+    other_site = JobSite(
+        site_name="Tanner Bridge Deck Pour",
+        address="Tanner Rd, Markham",
+        latitude=43.8573,
+        longitude=-79.3395,
+        geofence_radius_m=250,
+    )
     db.session.add_all([admin, dispatcher, supervisor, w1, w2, site, other_site])
     db.session.flush()
 
-    job_a = Job(site=site, creator=dispatcher, title="Level 4 framing",
-                scheduled_date=DAY, crew_size=3, status="Scheduled")
-    job_b = Job(site=other_site, creator=dispatcher, title="Deck pour - Span 2",
-                scheduled_date=DAY, crew_size=3, status="Scheduled")
+    job_a = Job(
+        site=site,
+        creator=dispatcher,
+        title="Level 4 framing",
+        scheduled_date=DAY,
+        crew_size=3,
+        status="Scheduled",
+    )
+    job_b = Job(
+        site=other_site,
+        creator=dispatcher,
+        title="Deck pour - Span 2",
+        scheduled_date=DAY,
+        crew_size=3,
+        status="Scheduled",
+    )
     db.session.add_all([job_a, job_b])
     db.session.flush()
     # Marcus is assigned to job A on DAY. Ben is not assigned to anything yet.

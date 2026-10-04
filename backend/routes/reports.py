@@ -3,6 +3,7 @@
 Hours are summed from TimeEntry.hours(), which is computed from clock-in/clock-out.
 Only completed entries count toward hours, and Rejected entries are excluded.
 """
+
 import csv
 import io
 from datetime import date, timedelta
@@ -145,8 +146,19 @@ def hours_csv():
     writer = csv.writer(buffer)
     writer.writerow(
         [
-            "entry_id", "worker", "trade", "job", "site", "clock_in", "clock_out",
-            "hours", "status", "flagged", "flag_reason", "approved_by", "edit_reason",
+            "entry_id",
+            "worker",
+            "trade",
+            "job",
+            "site",
+            "clock_in",
+            "clock_out",
+            "hours",
+            "status",
+            "flagged",
+            "flag_reason",
+            "approved_by",
+            "edit_reason",
         ]
     )
     for e in _entries_in_range(start, end):

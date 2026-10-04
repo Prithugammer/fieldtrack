@@ -3,6 +3,7 @@
 Run the development server with:   python app.py      (http://localhost:5000)
 Debug mode (auto-reload + interactive tracebacks) is off unless FLASK_DEBUG=1 is set.
 """
+
 import os
 
 from flask import Flask, jsonify
@@ -35,8 +36,15 @@ def create_app(overrides=None):
     jwt.init_app(app)
 
     for bp in (
-        auth_bp, users_bp, sites_bp, jobs_bp, assignments_bp,
-        time_entries_bp, reports_bp, dashboard_bp, map_bp,
+        auth_bp,
+        users_bp,
+        sites_bp,
+        jobs_bp,
+        assignments_bp,
+        time_entries_bp,
+        reports_bp,
+        dashboard_bp,
+        map_bp,
     ):
         app.register_blueprint(bp)
 
@@ -44,6 +52,7 @@ def create_app(overrides=None):
 
     with app.app_context():
         import models  # noqa: F401  (make sure every table is registered)
+
         db.create_all()
 
     @app.get("/api/health")
@@ -84,12 +93,18 @@ def _register_error_handlers(app):
     @jwt.invalid_token_loader
     def invalid_token(reason):
         """Malformed or tampered token."""
-        return jsonify({"error": "Your session is invalid. Please log in again.", "field": None}), 401
+        return (
+            jsonify({"error": "Your session is invalid. Please log in again.", "field": None}),
+            401,
+        )
 
     @jwt.expired_token_loader
     def expired_token(header, payload):
         """Token older than JWT_ACCESS_TOKEN_EXPIRES (one shift by default)."""
-        return jsonify({"error": "Your session has expired. Please log in again.", "field": None}), 401
+        return (
+            jsonify({"error": "Your session has expired. Please log in again.", "field": None}),
+            401,
+        )
 
 
 if __name__ == "__main__":

@@ -51,9 +51,7 @@ async function send(path, { method = 'GET', body, params } = {}) {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
   } catch {
-    throw new ApiError(
-      'Cannot reach the FieldTrack server. Make sure the backend is running on port 5000.',
-    )
+    throw new ApiError('Cannot reach the FieldTrack server. Make sure the backend is running on port 5000.')
   }
 
   if (res.status === 401 && authToken && onUnauthorized) {

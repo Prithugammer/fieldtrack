@@ -1,5 +1,6 @@
 """Security rules (hashing, tokens, roles) and edge cases a reviewer might try directly
 against the API rather than through the UI."""
+
 from datetime import timedelta
 
 import pytest
@@ -21,8 +22,12 @@ def test_passwords_are_stored_only_as_bcrypt_hashes(app):
 
 
 def test_wrong_password_is_401_with_the_same_message_as_unknown_email(client):
-    wrong = client.post("/api/auth/login", json={"email": "admin@test.com", "password": "nope-nope"})
-    unknown = client.post("/api/auth/login", json={"email": "nobody@test.com", "password": PASSWORD})
+    wrong = client.post(
+        "/api/auth/login", json={"email": "admin@test.com", "password": "nope-nope"}
+    )
+    unknown = client.post(
+        "/api/auth/login", json={"email": "nobody@test.com", "password": PASSWORD}
+    )
     assert wrong.status_code == unknown.status_code == 401
     assert wrong.get_json()["error"] == unknown.get_json()["error"]
 
@@ -118,7 +123,10 @@ def test_cors_origins_come_from_the_environment(monkeypatch):
     import config
 
     monkeypatch.setenv("CORS_ORIGINS", "https://a.example, https://b.example")
-    assert importlib.reload(config).Config.CORS_ORIGINS == ["https://a.example", "https://b.example"]
+    assert importlib.reload(config).Config.CORS_ORIGINS == [
+        "https://a.example",
+        "https://b.example",
+    ]
     monkeypatch.delenv("CORS_ORIGINS")
     assert "http://localhost:5173" in importlib.reload(config).Config.CORS_ORIGINS
 
@@ -128,35 +136,68 @@ def test_cors_origins_come_from_the_environment(monkeypatch):
 
 @pytest.mark.parametrize("radius", [0, -50, 24, 5001])
 def test_geofence_radius_outside_25_to_5000_is_rejected(client, dispatcher_headers, radius):
-    body = {"site_name": "Edge Site", "address": "1 Test Road", "latitude": 27.7,
-            "longitude": 85.3, "geofence_radius_m": radius}
+    body = {
+        "site_name": "Edge Site",
+        "address": "1 Test Road",
+        "latitude": 27.7,
+        "longitude": 85.3,
+        "geofence_radius_m": radius,
+    }
     res = client.post("/api/sites", json=body, headers=dispatcher_headers)
     assert res.status_code == 400 and res.get_json()["field"] == "geofence_radius_m"
-    res = client.patch("/api/sites/1", json={"geofence_radius_m": radius}, headers=dispatcher_headers)
+    res = client.patch(
+        "/api/sites/1", json={"geofence_radius_m": radius}, headers=dispatcher_headers
+    )
     assert res.status_code == 400 and res.get_json()["field"] == "geofence_radius_m"
 
 
 def test_clock_out_equal_to_clock_in_is_rejected(client, supervisor_headers):
     marcus = User.query.filter_by(email="marcus@test.com").first()
     job = Job.query.filter_by(title="Level 4 framing").first()
-    body = {"user_id": marcus.user_id, "job_id": job.job_id, "clock_in": f"{DAY}T07:00",
-            "in_lat": 43.6591, "in_lng": -79.3503, "clock_out": f"{DAY}T07:00",
-            "out_lat": 43.6591, "out_lng": -79.3503}
+    body = {
+        "user_id": marcus.user_id,
+        "job_id": job.job_id,
+        "clock_in": f"{DAY}T07:00",
+        "in_lat": 43.6591,
+        "in_lng": -79.3503,
+        "clock_out": f"{DAY}T07:00",
+        "out_lat": 43.6591,
+        "out_lng": -79.3503,
+    }
     res = client.post("/api/time-entries", json=body, headers=supervisor_headers)
     assert res.status_code == 400 and res.get_json()["field"] == "clock_out"
 
 
 def test_job_with_no_crew_and_worker_without_trade_render_everywhere(client, admin_headers, app):
     site = JobSite.query.first()
-    db.session.add(Job(site=site, creator=User.query.first(), title="Empty crew job",
-                       scheduled_date=DAY, crew_size=2, status="Scheduled"))
-    db.session.add(User(full_name="No Trade", email="notrade@test.com", role="Worker", is_active=True))
+    db.session.add(
+        Job(
+            site=site,
+            creator=User.query.first(),
+            title="Empty crew job",
+            scheduled_date=DAY,
+            crew_size=2,
+            status="Scheduled",
+        )
+    )
+    db.session.add(
+        User(full_name="No Trade", email="notrade@test.com", role="Worker", is_active=True)
+    )
     db.session.commit()
-    for path in ("/api/jobs", "/api/users", "/api/dashboard", "/api/map/live",
-                 f"/api/reports/hours-by-job?from={DAY}&to={DAY}", f"/api/reports/hours.csv?from={DAY}&to={DAY}"):
+    for path in (
+        "/api/jobs",
+        "/api/users",
+        "/api/dashboard",
+        "/api/map/live",
+        f"/api/reports/hours-by-job?from={DAY}&to={DAY}",
+        f"/api/reports/hours.csv?from={DAY}&to={DAY}",
+    ):
         assert client.get(path, headers=admin_headers).status_code == 200, path
-    job = next(j for j in client.get("/api/jobs", headers=admin_headers).get_json()["jobs"]
-               if j["title"] == "Empty crew job")
+    job = next(
+        j
+        for j in client.get("/api/jobs", headers=admin_headers).get_json()["jobs"]
+        if j["title"] == "Empty crew job"
+    )
     assert job["assigned_count"] == 0 and job["crew"] == []
 
 
@@ -171,12 +212,25 @@ def test_every_read_endpoint_works_on_an_empty_database():
         db.session.add(admin)
         db.session.commit()
         client = app.test_client()
-        token = client.post("/api/auth/login", json={"email": "only@test.com", "password": PASSWORD}).get_json()["token"]
+        token = client.post(
+            "/api/auth/login", json={"email": "only@test.com", "password": PASSWORD}
+        ).get_json()["token"]
         headers = {"Authorization": f"Bearer {token}"}
-        for path in ("/api/dashboard", "/api/jobs", "/api/sites", "/api/users", "/api/assignments",
-                     "/api/time-entries", "/api/reports/hours-by-worker", "/api/reports/hours-by-job",
-                     "/api/reports/flagged", "/api/reports/hours.csv", "/api/map/live",
-                     "/api/map/sim-clock", "/api/map/bounds"):
+        for path in (
+            "/api/dashboard",
+            "/api/jobs",
+            "/api/sites",
+            "/api/users",
+            "/api/assignments",
+            "/api/time-entries",
+            "/api/reports/hours-by-worker",
+            "/api/reports/hours-by-job",
+            "/api/reports/flagged",
+            "/api/reports/hours.csv",
+            "/api/map/live",
+            "/api/map/sim-clock",
+            "/api/map/bounds",
+        ):
             assert client.get(path, headers=headers).status_code == 200, path
         live = client.get("/api/map/live", headers=headers).get_json()
         assert live["job_sites"] == [] and live["workers"] == []

@@ -4,6 +4,7 @@ Every helper raises ApiError on bad input. The app turns ApiError into a JSON re
 form {"error": "...", "field": "..."} so the React UI can show the message under the right
 form field.
 """
+
 import re
 from datetime import date, datetime, time, timedelta
 

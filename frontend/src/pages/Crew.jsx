@@ -219,7 +219,13 @@ function UserFormModal({ person, onClose, onSaved }) {
             <input id="u-email" type="email" className="input" value={form.email} onChange={set('email')} />
           </FormField>
           <FormField label="Phone" htmlFor="u-phone" error={errors.phone}>
-            <input id="u-phone" className="input" value={form.phone} onChange={set('phone')} placeholder="416-555-0100" />
+            <input
+              id="u-phone"
+              className="input"
+              value={form.phone}
+              onChange={set('phone')}
+              placeholder="416-555-0100"
+            />
           </FormField>
           <FormField label="Role" htmlFor="u-role" error={errors.role} required>
             <select id="u-role" className="input" value={form.role} onChange={set('role')}>
@@ -229,7 +235,13 @@ function UserFormModal({ person, onClose, onSaved }) {
             </select>
           </FormField>
           <FormField label="Trade" htmlFor="u-trade" error={errors.trade} required={isWorker}>
-            <input id="u-trade" className="input" value={form.trade} onChange={set('trade')} placeholder="e.g. Carpenter" />
+            <input
+              id="u-trade"
+              className="input"
+              value={form.trade}
+              onChange={set('trade')}
+              placeholder="e.g. Carpenter"
+            />
           </FormField>
           {!isWorker && (
             <FormField
@@ -240,7 +252,14 @@ function UserFormModal({ person, onClose, onSaved }) {
               hint={isNew ? 'At least 8 characters.' : 'Leave blank to keep the current password.'}
               className="span-2"
             >
-              <input id="u-password" type="password" className="input" value={form.password} onChange={set('password')} autoComplete="new-password" />
+              <input
+                id="u-password"
+                type="password"
+                className="input"
+                value={form.password}
+                onChange={set('password')}
+                autoComplete="new-password"
+              />
             </FormField>
           )}
         </div>

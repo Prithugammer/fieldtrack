@@ -17,6 +17,7 @@ How it works:
   * Workers with no assignment today are "Off duty" and shown greyed out at a fixed point
     near a landmark (their home area). They never move.
 """
+
 import math
 import random
 import time
@@ -25,13 +26,13 @@ from itertools import combinations
 from geofence import haversine
 from kathmandu_geo import LANDMARKS, TRAFFIC_HOTSPOTS, random_point_near
 
-CYCLE_SECONDS = 300           # one simulated window every 5 real minutes
-SIM_DAY_START = 6 * 60        # 6:00 AM, in minutes after midnight
-SIM_DAY_END = 7 * 60 + 15     # 7:15 AM (the morning commute; sized so someone is always moving)
-PIECE_M = 100                 # routes are split into pieces this long for the traffic check
+CYCLE_SECONDS = 300  # one simulated window every 5 real minutes
+SIM_DAY_START = 6 * 60  # 6:00 AM, in minutes after midnight
+SIM_DAY_END = 7 * 60 + 15  # 7:15 AM (the morning commute; sized so someone is always moving)
+PIECE_M = 100  # routes are split into pieces this long for the traffic check
 
 START_MIN_KM, START_MAX_KM = 2.5, 10.0
-MAX_ROUTE_RATIO = 1.3         # a whole route may be at most 30% longer than the straight line
+MAX_ROUTE_RATIO = 1.3  # a whole route may be at most 30% longer than the straight line
 
 
 def _dist(a, b):
@@ -56,7 +57,9 @@ def build_route(user_id, day, site_lat, site_lng):
     end = (site_lat, site_lng)
 
     names = sorted(LANDMARKS)
-    starts = [n for n in names if START_MIN_KM * 1000 <= _dist(LANDMARKS[n], end) <= START_MAX_KM * 1000]
+    starts = [
+        n for n in names if START_MIN_KM * 1000 <= _dist(LANDMARKS[n], end) <= START_MAX_KM * 1000
+    ]
     start_name = rng.choice(starts or names)
     start = random_point_near(*LANDMARKS[start_name], 0.4, rng)
     direct = _dist(start, end)
@@ -66,9 +69,11 @@ def build_route(user_id, day, site_lat, site_lng):
         return (_dist(start, p) + _dist(p, end)) / direct
 
     vias = [
-        n for n in names
+        n
+        for n in names
         if n != start_name
-        and _dist(LANDMARKS[n], end) > 600 and _dist(LANDMARKS[n], start) > 600
+        and _dist(LANDMARKS[n], end) > 600
+        and _dist(LANDMARKS[n], start) > 600
         and detour(n) <= MAX_ROUTE_RATIO
     ]
     # Main roads run through the busy junctions, so prefer those as waypoints.
@@ -102,7 +107,9 @@ def build_route(user_id, day, site_lat, site_lng):
         n = max(1, math.ceil(_dist(a, b) / PIECE_M))
         for i in range(n):
             p, q = _lerp(a, b, i / n), _lerp(a, b, (i + 1) / n)
-            pieces.append({"a": p, "b": q, "length_m": _dist(p, q), "hotspot": _hotspot_at(_lerp(p, q, 0.5))})
+            pieces.append(
+                {"a": p, "b": q, "length_m": _dist(p, q), "hotspot": _hotspot_at(_lerp(p, q, 0.5))}
+            )
     total_m = sum(pc["length_m"] for pc in pieces) or 1.0
     for pc in pieces:
         minutes = base_minutes * pc["length_m"] / total_m
@@ -119,7 +126,7 @@ def build_route(user_id, day, site_lat, site_lng):
         "length_m": total_m,
         "base_minutes": base_minutes,
         "duration_minutes": sum(pc["minutes"] for pc in pieces),  # including traffic delays
-        "departure": None,                                       # set by plan_departures()
+        "departure": None,  # set by plan_departures()
         "site_spot": random_point_near(site_lat, site_lng, 0.03, rng),  # where they stand on site
     }
 
@@ -140,7 +147,7 @@ def plan_departures(routes, day):
         return order
 
     d = [r["duration_minutes"] for r in order]
-    order[0]["departure"] = SIM_DAY_START - d[0] - 2   # already on site when the window opens
+    order[0]["departure"] = SIM_DAY_START - d[0] - 2  # already on site when the window opens
     order[1]["departure"] = SIM_DAY_START - 0.3 * d[1]
     if len(order) == 2:
         return order
@@ -180,7 +187,12 @@ def get_worker_position(worker, route, sim_clock_minutes):
 
     Returns a dict with status "Not started" (no position), "In transit" or "On site".
     """
-    base = {"user_id": worker.user_id, "near_traffic": False, "hotspot": None, "distance_remaining_m": None}
+    base = {
+        "user_id": worker.user_id,
+        "near_traffic": False,
+        "hotspot": None,
+        "distance_remaining_m": None,
+    }
     elapsed = sim_clock_minutes - route["departure"]
     if elapsed < 0:
         return {**base, "status": "Not started", "lat": None, "lng": None}
@@ -235,9 +247,19 @@ def get_live_map_state(sites, assignments, workers, day, now=None):
         a = by_user.get(w.user_id)
         if a is None:
             lat, lng = off_duty_spot(w.user_id, day)
-            out.append({**info, "status": "Off duty", "lat": lat, "lng": lng, "job_title": None,
-                        "site_name": None, "near_traffic": False, "hotspot": None,
-                        "distance_remaining_m": None})
+            out.append(
+                {
+                    **info,
+                    "status": "Off duty",
+                    "lat": lat,
+                    "lng": lng,
+                    "job_title": None,
+                    "site_name": None,
+                    "near_traffic": False,
+                    "hotspot": None,
+                    "distance_remaining_m": None,
+                }
+            )
             continue
         pos = get_worker_position(w, routes[w.user_id], minutes)
         pos.pop("user_id")

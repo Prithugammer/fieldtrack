@@ -183,7 +183,11 @@ export default function LiveMap() {
   const count = (pred) => workers.filter(pred).length
   const legend = [
     { variant: 'onsite', label: 'On site', n: count((w) => w.status === 'On site') },
-    { variant: 'transit', label: 'In transit', n: count((w) => w.status === 'In transit' && !w.near_traffic) },
+    {
+      variant: 'transit',
+      label: 'In transit',
+      n: count((w) => w.status === 'In transit' && !w.near_traffic),
+    },
     { variant: 'traffic', label: 'Delayed in traffic', n: count((w) => w.near_traffic) },
     { variant: 'off', label: 'Off duty', n: count((w) => w.status === 'Off duty') },
   ]
@@ -191,7 +195,15 @@ export default function LiveMap() {
 
   let body
   if ((bounds.error || error) && !live) {
-    body = <ErrorState message={(bounds.error || error).message} onRetry={() => { bounds.reload(); poll() }} />
+    body = (
+      <ErrorState
+        message={(bounds.error || error).message}
+        onRetry={() => {
+          bounds.reload()
+          poll()
+        }}
+      />
+    )
   } else if (!live || !view) {
     body = <LoadingState label="Loading map…" />
   } else if (live.job_sites.length === 0) {
@@ -306,7 +318,10 @@ export default function LiveMap() {
         actions={
           clock && (
             <span className="live-map__clock-group">
-              <span className="chip chip--navy live-map__clock" title={`Simulated ${clock.window_start}–${clock.window_end}, repeating every ${clock.cycle_seconds / 60} real minutes`}>
+              <span
+                className="chip chip--navy live-map__clock"
+                title={`Simulated ${clock.window_start}–${clock.window_end}, repeating every ${clock.cycle_seconds / 60} real minutes`}
+              >
                 Simulated time: {clock.sim_time}
               </span>
               <CycleCountdown resetAt={clock.resetAt} cycleSeconds={clock.cycle_seconds} />
@@ -315,7 +330,9 @@ export default function LiveMap() {
         }
       />
       <div className="page">
-        {error && live && <Alert tone="warning">Lost connection to the server — retrying. {error.message}</Alert>}
+        {error && live && (
+          <Alert tone="warning">Lost connection to the server — retrying. {error.message}</Alert>
+        )}
         <div className="card">
           <div className="live-map__legend">
             {legend.map((item) => (
@@ -330,9 +347,7 @@ export default function LiveMap() {
             <span className="live-map__legend-item">
               <span className="live-map__hotspot-swatch" /> Traffic hotspot
             </span>
-            {live && notStarted > 0 && (
-              <span className="muted small">{notStarted} not on the road yet</span>
-            )}
+            {live && notStarted > 0 && <span className="muted small">{notStarted} not on the road yet</span>}
           </div>
           {live && workers.every((w) => w.status === 'Off duty') && (
             <div className="muted small live-map__note">

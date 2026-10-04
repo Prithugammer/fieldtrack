@@ -1,4 +1,5 @@
 """Time entries: recording clock-in/clock-out with GPS, geofence flagging, and approval."""
+
 from datetime import timedelta
 
 from flask import Blueprint, g, jsonify, request
@@ -214,9 +215,7 @@ def approve(entry_id):
         raise ApiError("Clock the worker out before approving or rejecting this entry.")
     if entry.status != "Pending":
         who = entry.approver.full_name if entry.approver else "someone"
-        raise ApiError(
-            f"This entry was already {entry.status.lower()} by {who}.", status=409
-        )
+        raise ApiError(f"This entry was already {entry.status.lower()} by {who}.", status=409)
 
     entry.status = decision
     entry.approved_by = g.current_user.user_id

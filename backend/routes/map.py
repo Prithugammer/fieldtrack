@@ -2,6 +2,7 @@
 
 Read-only. Positions are computed from the wall clock on every request; nothing is written.
 """
+
 from datetime import date
 
 from flask import Blueprint, jsonify

@@ -22,7 +22,8 @@ export default function Reports() {
   const byWorker = useApi('/reports/hours-by-worker', range)
   const byJob = useApi('/reports/hours-by-job', range)
   const flagged = useApi('/reports/flagged', range)
-  const rangeError = byWorker.error?.field === 'from' || byWorker.error?.field === 'to' ? byWorker.error : null
+  const rangeError =
+    byWorker.error?.field === 'from' || byWorker.error?.field === 'to' ? byWorker.error : null
 
   async function downloadCsv() {
     setDownloadError(null)
@@ -47,15 +48,40 @@ export default function Reports() {
         </>
       ),
     },
-    { key: 'entries', header: 'Entries', align: 'right', render: (r) => <span className="num">{r.entries}</span> },
-    { key: 'approved_hours', header: 'Approved', align: 'right', render: (r) => <span className="num">{formatHours(r.approved_hours)}</span> },
-    { key: 'pending_hours', header: 'Pending', align: 'right', render: (r) => <span className="num">{formatHours(r.pending_hours)}</span> },
-    { key: 'total_hours', header: 'Total', align: 'right', render: (r) => <span className="num strong">{formatHours(r.total_hours)}</span> },
+    {
+      key: 'entries',
+      header: 'Entries',
+      align: 'right',
+      render: (r) => <span className="num">{r.entries}</span>,
+    },
+    {
+      key: 'approved_hours',
+      header: 'Approved',
+      align: 'right',
+      render: (r) => <span className="num">{formatHours(r.approved_hours)}</span>,
+    },
+    {
+      key: 'pending_hours',
+      header: 'Pending',
+      align: 'right',
+      render: (r) => <span className="num">{formatHours(r.pending_hours)}</span>,
+    },
+    {
+      key: 'total_hours',
+      header: 'Total',
+      align: 'right',
+      render: (r) => <span className="num strong">{formatHours(r.total_hours)}</span>,
+    },
     {
       key: 'flagged_entries',
       header: 'Flagged',
       align: 'right',
-      render: (r) => (r.flagged_entries ? <StatusChip status={String(r.flagged_entries)} tone="amber" /> : <span className="muted">0</span>),
+      render: (r) =>
+        r.flagged_entries ? (
+          <StatusChip status={String(r.flagged_entries)} tone="amber" />
+        ) : (
+          <span className="muted">0</span>
+        ),
     },
   ]
 
@@ -70,15 +96,38 @@ export default function Reports() {
         </>
       ),
     },
-    { key: 'scheduled_date', header: 'Date', render: (r) => <span className="num">{formatDate(r.scheduled_date)}</span> },
+    {
+      key: 'scheduled_date',
+      header: 'Date',
+      render: (r) => <span className="num">{formatDate(r.scheduled_date)}</span>,
+    },
     { key: 'status', header: 'Status', render: (r) => <StatusChip status={r.status} /> },
-    { key: 'workers', header: 'Workers', align: 'right', render: (r) => <span className="num">{r.workers}</span> },
-    { key: 'entries', header: 'Entries', align: 'right', render: (r) => <span className="num">{r.entries}</span> },
-    { key: 'total_hours', header: 'Total', align: 'right', render: (r) => <span className="num strong">{formatHours(r.total_hours)}</span> },
+    {
+      key: 'workers',
+      header: 'Workers',
+      align: 'right',
+      render: (r) => <span className="num">{r.workers}</span>,
+    },
+    {
+      key: 'entries',
+      header: 'Entries',
+      align: 'right',
+      render: (r) => <span className="num">{r.entries}</span>,
+    },
+    {
+      key: 'total_hours',
+      header: 'Total',
+      align: 'right',
+      render: (r) => <span className="num strong">{formatHours(r.total_hours)}</span>,
+    },
   ]
 
   const flaggedColumns = [
-    { key: 'worker_name', header: 'Worker', render: (e) => <span className="cell-title">{e.worker_name}</span> },
+    {
+      key: 'worker_name',
+      header: 'Worker',
+      render: (e) => <span className="cell-title">{e.worker_name}</span>,
+    },
     {
       key: 'job',
       header: 'Job',
@@ -89,8 +138,20 @@ export default function Reports() {
         </>
       ),
     },
-    { key: 'clock_in', header: 'Clock-in', render: (e) => <span className="num">{formatDateTime(e.clock_in)}</span> },
-    { key: 'flag_reason', header: 'Reason', render: (e) => <span className="flag-reason" style={{ marginTop: 0 }}>⚑ {e.flag_reason}</span> },
+    {
+      key: 'clock_in',
+      header: 'Clock-in',
+      render: (e) => <span className="num">{formatDateTime(e.clock_in)}</span>,
+    },
+    {
+      key: 'flag_reason',
+      header: 'Reason',
+      render: (e) => (
+        <span className="flag-reason" style={{ marginTop: 0 }}>
+          ⚑ {e.flag_reason}
+        </span>
+      ),
+    },
     { key: 'status', header: 'Status', render: (e) => <StatusChip status={e.status} /> },
   ]
 
@@ -123,11 +184,31 @@ export default function Reports() {
               setRange({ ...draft })
             }}
           >
-            <FormField label="From" htmlFor="r-from" error={rangeError?.field === 'from' ? rangeError.message : undefined}>
-              <input id="r-from" type="date" className="input" value={draft.from} onChange={(e) => setDraft({ ...draft, from: e.target.value })} />
+            <FormField
+              label="From"
+              htmlFor="r-from"
+              error={rangeError?.field === 'from' ? rangeError.message : undefined}
+            >
+              <input
+                id="r-from"
+                type="date"
+                className="input"
+                value={draft.from}
+                onChange={(e) => setDraft({ ...draft, from: e.target.value })}
+              />
             </FormField>
-            <FormField label="To" htmlFor="r-to" error={rangeError?.field === 'to' ? rangeError.message : undefined}>
-              <input id="r-to" type="date" className="input" value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} />
+            <FormField
+              label="To"
+              htmlFor="r-to"
+              error={rangeError?.field === 'to' ? rangeError.message : undefined}
+            >
+              <input
+                id="r-to"
+                type="date"
+                className="input"
+                value={draft.to}
+                onChange={(e) => setDraft({ ...draft, to: e.target.value })}
+              />
             </FormField>
             <button type="submit" className="btn btn--navy">
               Apply range
