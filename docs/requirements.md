@@ -33,7 +33,7 @@ hand. FieldTrack replaces it with a web application that:
 |-------|-------------|
 | FR-01 | The system shall authenticate staff users (Admin, Dispatcher, Supervisor) by email and password and issue a signed JWT that carries the user's id and role. Workers and deactivated users shall be refused. |
 | FR-02 | The system shall restrict every API endpoint to the roles permitted for it and return HTTP 403 when a user with the wrong role attempts an action. |
-| FR-03 | An Admin shall be able to create users, edit their name, phone, role and trade, and activate or deactivate them. Email addresses shall be unique. |
+| FR-03 | An Admin shall be able to create users, edit their name, email, phone, role, trade and password, and activate or deactivate them. Email addresses shall be unique. |
 | FR-04 | A Dispatcher or Admin shall be able to create and edit job sites with a name, address, latitude, longitude and geofence radius (default 200 m). |
 | FR-05 | A Dispatcher or Admin shall be able to create and edit jobs (site, title, description, scheduled date, crew size, status) and list them filtered by date and status. Job status shall be one of *Scheduled*, *In progress*, *Completed*. |
 | FR-06 | A Dispatcher or Admin shall be able to assign an active worker to a job for its work date and remove an assignment. An assignment shall be refused when the job's crew is already full. |
@@ -43,6 +43,7 @@ hand. FieldTrack replaces it with a web application that:
 | FR-10 | A Supervisor or Admin shall be able to record a clock-out (time and coordinates). Clock-out must be after clock-in; shifts that cross midnight shall be supported. Hours worked shall always be computed from clock-in/clock-out and never stored. |
 | FR-11 | A Supervisor or Admin shall be able to approve or reject a completed time entry with a mandatory reason. The system shall record who made the decision. A decided entry cannot be decided again. |
 | FR-12 | The system shall provide a dashboard (active jobs, workers clocked in, hours today, flagged entries) and reports of hours by worker, hours by job and flagged entries for a date range, with CSV export of the underlying time entries. |
+| FR-13 | The system shall show a live map of every job site (with its geofence) and of each worker's position. Until a mobile app supplies real GPS, positions shall be **simulated** deterministically from the server clock and clearly labelled as simulated. |
 
 ## 4. Non-Functional Requirements
 
@@ -54,6 +55,7 @@ hand. FieldTrack replaces it with a web application that:
 | NFR-04 | Data integrity  | The database shall enforce primary keys, foreign keys, unique email, one assignment per worker per day, and allowed status values. Derived values (hours) shall never be stored. |
 | NFR-05 | Maintainability | The backend shall be organised into Flask blueprints with a docstring on every route; business rules (geofence, double-booking) shall be isolated and covered by automated pytest tests. |
 | NFR-06 | Portability     | The system shall run locally on Windows, macOS or Linux with Python 3 and Node.js, using a file-based SQLite database and any modern browser. |
+| NFR-07 | Configuration   | Secrets, the database URL, token lifetime and allowed CORS origins shall come from environment variables (with local defaults), and debug mode shall be off unless explicitly enabled. |
 
 ## 5. User Stories
 
@@ -71,6 +73,7 @@ hand. FieldTrack replaces it with a web application that:
 | US-10 | As a **Supervisor**, I want to approve or reject time entries with a reason so that payroll only pays verified hours and there is an audit trail. |
 | US-11 | As a **Supervisor**, I want to see hours by worker and by job for a date range so that I can check labour cost against the plan. |
 | US-12 | As an **Admin**, I want to export hours as CSV so that payroll can import them without re-typing. |
+| US-13 | As a **Dispatcher**, I want to see on a map where my crews are and whether anyone is delayed so that I can react before a job falls behind. |
 
 ## 6. Traceability (story → requirement)
 
@@ -86,3 +89,4 @@ hand. FieldTrack replaces it with a web application that:
 | US-10 | FR-11 |
 | US-11 | FR-12 |
 | US-12 | FR-12 |
+| US-13 | FR-13 |

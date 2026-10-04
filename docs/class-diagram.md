@@ -1,7 +1,7 @@
 # FieldTrack — Class Diagram
 
 The SQLAlchemy model classes in `backend/models.py`, plus the pure-function `geofence`
-module they use. Relationships are declared in both directions (`back_populates`).
+module they use and the read-only `simulation` module behind the Live Map. Relationships are declared in both directions (`back_populates`).
 
 ```mermaid
 classDiagram
@@ -111,6 +111,16 @@ classDiagram
         +should_flag(distance_m, radius_m)$ bool
     }
 
+    class simulation {
+        <<module>>
+        +build_route(user_id, day, site_lat, site_lng)$ dict
+        +plan_departures(routes, day)$ list
+        +sim_clock(now)$ tuple
+        +seconds_to_reset(now)$ float
+        +get_worker_position(worker, route, sim_minutes)$ dict
+        +get_live_map_state(sites, assignments, workers, day, now)$ dict
+    }
+
     User "1" --> "0..*" Job : creates
     User "1" --> "0..*" Assignment : is assigned
     User "1" --> "0..*" TimeEntry : works
@@ -121,6 +131,8 @@ classDiagram
     Job "1" --> "0..*" TimeEntry : charged to
     JobSite ..> geofence : uses
     TimeEntry ..> geofence : uses
+    simulation ..> geofence : uses
+    simulation ..> Assignment : reads
 ```
 
 ## Method notes
@@ -135,3 +147,4 @@ classDiagram
 | TimeEntry | `hours_so_far(now)` | Hours for open entries up to `now` — used for "hours logged today". |
 | TimeEntry | `apply_geofence(lat, lng, label)` | **The geofence rule**: haversine distance from the job site; if `should_flag(distance, radius)` it calls `add_flag` with e.g. "Clock-in 500 m from site (limit 200 m)". The entry is always kept. |
 | TimeEntry | `add_flag(reason)` | Sets `is_flagged` and appends a reason (clock-in and clock-out can both add one). |
+| simulation | `build_route` / `get_worker_position` | Deterministic commute (same worker + date = same route, at most 1.3× the straight line) and the position on it at a simulated time. Pure functions: no database writes. See [live-map-design.md](live-map-design.md). |

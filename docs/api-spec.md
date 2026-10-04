@@ -5,6 +5,7 @@
 - **Authentication:** `Authorization: Bearer <JWT>` on every endpoint except login. Tokens expire after 8 hours.
 - **Dates:** `YYYY-MM-DD`. **Datetimes:** `YYYY-MM-DDTHH:MM[:SS]` (local site time, no timezone).
 - **Staff** below means any of `Admin`, `Dispatcher`, `Supervisor`.
+- **CORS:** only the origins in the `CORS_ORIGINS` environment variable may call the API (default: the Vite dev server on port 5173).
 
 ## Error format
 
@@ -24,6 +25,14 @@ about a single field.
 | 403 | Authenticated, but the role is not allowed (or the account is deactivated). |
 | 404 | The referenced record does not exist. |
 | 409 | Business-rule conflict: double-booking, crew full, not assigned, overlap, already decided, duplicate email. |
+
+---
+
+## Health
+
+### GET /health
+- **Role:** public (no token)
+- **200:** `{ "status": "ok" }` — used to check the API is running.
 
 ---
 

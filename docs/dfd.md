@@ -27,7 +27,7 @@ flowchart LR
 
 ## 2. Level-0 DFD
 
-The system decomposed into its five major processes and six data stores.
+The system decomposed into its six major processes and six data stores.
 
 ```mermaid
 flowchart LR
@@ -40,6 +40,7 @@ flowchart LR
     P3(["3.0<br/>Record Time"])
     P4(["4.0<br/>Approve Time"])
     P5(["5.0<br/>Generate Reports"])
+    P6(["6.0<br/>Show Live Map"])
 
     D1[("D1 users")]
     D2[("D2 job_sites")]
@@ -86,6 +87,13 @@ flowchart LR
     D3 -- "job titles" --> P5
     P5 -- "hours by worker/job, flagged list, CSV" --> SUP
     P5 -- "dashboard KPIs, CSV" --> ADM
+
+    %% 6.0 Show Live Map (positions simulated from the clock; nothing is written)
+    D2 -- "site coords & geofence radius" --> P6
+    D4 -- "today's assignments" --> P6
+    D1 -- "active workers" --> P6
+    P6 -- "sites + simulated worker positions" --> DISP
+    P6 -- "sites + simulated worker positions" --> SUP
 ```
 
 ## 3. Process Descriptions
@@ -97,3 +105,4 @@ flowchart LR
 | 3.0 Record Time | Worker, job, times, coordinates | Worker must be **assigned to that job that day**; no overlap; haversine distance to site; flag if distance > radius; always save | Row in D5 `time_entries` + rows in D6 `location_pings` |
 | 4.0 Approve Time | Entry id, decision, reason | Entry must be Pending and clocked out; reason required | Updated status/approver in D5 |
 | 5.0 Generate Reports | Date range | Sum computed hours (clock_out − clock_in), excluding rejected entries | Report tables and CSV file |
+| 6.0 Show Live Map | Server clock | For each worker assigned today, compute a deterministic commute and the position at the current simulated time; read-only | Site pins with geofences and worker markers (no data store is written) |

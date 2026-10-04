@@ -24,6 +24,7 @@ flowchart LR
         UC10([View dashboard])
         UC11([Generate reports])
         UC12([Export CSV])
+        UC13([View live map])
     end
 
     ADM --- UC1
@@ -36,12 +37,14 @@ flowchart LR
     DISP --- UC4
     DISP --- UC5
     DISP --- UC10
+    DISP --- UC13
 
     SUP --- UC1
     SUP --- UC7
     SUP --- UC9
     SUP --- UC10
     SUP --- UC11
+    SUP --- UC13
 
     UC5 -. "«include»" .-> UC6
     UC7 -. "«include»" .-> UC8
@@ -50,7 +53,8 @@ flowchart LR
 ```
 
 *Admin inherits every staff capability; only the Admin-specific associations are drawn to
-keep the diagram readable.*
+keep the diagram readable. UC13 shows simulated positions until a mobile app supplies real GPS
+(see [live-map-design.md](live-map-design.md)).*
 
 ## 2. Fully Dressed Use Case — UC7 "Record and approve a time entry"
 
@@ -90,9 +94,9 @@ keep the diagram readable.*
 | **7a** | Clock-in location is **outside the geofence**. | System still saves the entry (step 8) but sets `is_flagged = true` and `flag_reason` = "*Clock-in 512 m from site (limit 200 m)*". The row is highlighted amber and appears in the dashboard's *Needs Attention* list. |
 | **10a** | Clock-out time is **not after** clock-in. | System returns 400 with `field = clock_out`; nothing is saved. |
 | **10b** | Clock-out location is outside the geofence. | Clock-out is saved and the entry is flagged; the reason is appended to any existing flag reason. |
-| **10c** | Entry has already been clocked out. | System returns 409 "*Entry already clocked out*". |
+| **10c** | Entry has already been clocked out. | System returns 409 "*This entry has already been clocked out.*" |
 | **11a** | Supervisor decides to **reject** (e.g. worker was not on site). | Supervisor selects **Reject** and enters a reason. System sets status *Rejected*, records approver and reason. Rejected hours are excluded from reports. |
-| **11b** | Reason is left blank. | System returns 400 with `field = edit_reason`; the modal shows "A reason is required". |
+| **11b** | Reason is left blank. | System returns 400 with `field = edit_reason`; the modal shows "A reason is required for the audit trail." before anything is sent. |
 | **12a** | Entry is still open (no clock-out) or already decided. | System returns 400 / 409 respectively and the decision is not saved. |
 | **\*a** | JWT is expired or the user lacks the Supervisor/Admin role. | System returns 401 / 403; the UI returns to the login page or shows the permission error. |
 

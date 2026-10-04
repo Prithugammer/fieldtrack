@@ -39,7 +39,8 @@ flag       = distance_m > site.geofence_radius_m          (should_flag)
 
 - The boundary itself counts as inside: at exactly 200 m with a 200 m radius the entry is **not** flagged.
 - 199 m → not flagged; 201 m → flagged.
-- If a site has no radius set, the system default `GEOFENCE_RADIUS_M = 200` is used.
+- Every site has a radius (the column is NOT NULL). A site created without one gets the default
+  `GEOFENCE_RADIUS_M = 200`; radii outside 25–5000 m are rejected with HTTP 400.
 
 ## 3. Full decision table (all checks performed by the endpoint)
 
