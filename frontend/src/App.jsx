@@ -5,6 +5,7 @@ import Crew from './pages/Crew'
 import Dashboard from './pages/Dashboard'
 import Jobs from './pages/Jobs'
 import JobSites from './pages/JobSites'
+import LiveMap from './pages/LiveMap'
 import Login from './pages/Login'
 import Reports from './pages/Reports'
 import TimeEntries from './pages/TimeEntries'
@@ -22,6 +23,7 @@ export default function App() {
       >
         <Route index element={<Dashboard />} />
         <Route path="jobs" element={<Jobs />} />
+        <Route path="live-map" element={<LiveMap />} />
         <Route path="sites" element={<JobSites />} />
         <Route path="crew" element={<Crew />} />
         <Route path="time-entries" element={<TimeEntries />} />

@@ -1,0 +1,170 @@
+/* Live Map page (pages/LiveMap.jsx). Uses the design tokens from tokens.css. */
+
+.live-map {
+  /* own stacking context so Leaflet's internal z-indexes stay under the top bar and modals */
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
+}
+
+.live-map__canvas {
+  height: calc(100vh - 230px);
+  min-height: 460px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+}
+
+.live-map__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.live-map__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.live-map__note {
+  margin: var(--space-1) 0;
+}
+
+.live-map__clock {
+  font-variant-numeric: tabular-nums;
+}
+
+.live-map__hotspot-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px dashed var(--color-red);
+  background: rgba(211, 58, 58, 0.08);
+}
+
+/* Workers glide to each new simulated position instead of snapping (poll is every 4 s). */
+.leaflet-marker-icon.ft-glide {
+  transition: transform 3.8s linear;
+}
+
+.ft-no-glide .leaflet-marker-icon.ft-glide {
+  transition: none;
+}
+
+/* When the simulated morning restarts: the old cycle's markers fade out where they were
+   while the new cycle's markers fade in (off-duty markers stay put and don't blink). */
+.leaflet-marker-icon.ft-ghost {
+  pointer-events: none;
+  animation: ft-fade-out 0.6s ease-in forwards;
+}
+
+.live-map--entering .ft-glide .ft-worker:not(.ft-worker--off) {
+  animation: ft-fade-in 0.6s ease-out both;
+}
+
+@keyframes ft-fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes ft-fade-in {
+  from { opacity: 0; }
+}
+
+.live-map__reset {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  z-index: 1000;
+  box-shadow: var(--shadow-card);
+}
+
+.live-map__clock-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.live-map__cycle {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.live-map__cycle-bar {
+  display: block;
+  height: 3px;
+  width: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.live-map__cycle-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--color-navy-600);
+  transition: width 1s linear;
+}
+
+.ft-worker {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--color-white);
+  box-shadow: 0 1px 3px rgba(20, 33, 61, 0.45);
+  box-sizing: content-box;
+  flex-shrink: 0;
+}
+
+.ft-worker--onsite { background: var(--color-green); }
+.ft-worker--transit { background: var(--color-amber); }
+.ft-worker--traffic {
+  background: var(--color-amber);
+  border-color: var(--color-orange);
+  box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.45), 0 1px 3px rgba(20, 33, 61, 0.45);
+}
+.ft-worker--off {
+  background: var(--color-muted);
+  opacity: 0.55;
+}
+
+/* Small dot so the site's geofence circle stays visible around it at valley zoom. The marker
+   box around it is larger (16 px) so the site is still easy to click. */
+.ft-site-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ft-site {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-navy);
+  border: 2px solid var(--color-orange);
+  box-shadow: 0 0 0 1px var(--color-white);
+  box-sizing: content-box;
+  flex-shrink: 0;
+}
+
+.map-popup {
+  display: grid;
+  gap: 2px;
+  font-family: var(--font-family);
+  font-size: var(--text-sm);
+  min-width: 180px;
+}
+
+.map-popup__delay {
+  color: var(--color-orange-600);
+  font-weight: var(--weight-semibold);
+}

@@ -34,6 +34,12 @@ export const IconBriefcase = make(
     <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
   </>,
 )
+export const IconMap = make(
+  <>
+    <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" />
+    <path d="M9 4v14M15 6v14" />
+  </>,
+)
 export const IconPin = make(
   <>
     <path d="M12 21s-7-7.6-7-12a7 7 0 1 1 14 0c0 4.4-7 12-7 12z" />

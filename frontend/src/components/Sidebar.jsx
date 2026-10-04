@@ -4,6 +4,7 @@ import {
   IconChart,
   IconClock,
   IconDashboard,
+  IconMap,
   IconPin,
   IconUsers,
 } from './Icons'
@@ -14,6 +15,7 @@ const SECTIONS = [
     links: [
       { to: '/', label: 'Dashboard', icon: IconDashboard, end: true },
       { to: '/jobs', label: 'Jobs', icon: IconBriefcase },
+      { to: '/live-map', label: 'Live Map', icon: IconMap },
       { to: '/sites', label: 'Job Sites', icon: IconPin },
       { to: '/crew', label: 'Crew', icon: IconUsers },
     ],

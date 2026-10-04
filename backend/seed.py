@@ -7,16 +7,18 @@ tomorrow. Everything is recreated from scratch each time this script runs.
 
 Summary of what is created:
   * 1 admin, 2 dispatchers, 1 supervisor (can log in) and 8 workers with trades
-  * 4 job sites with real-looking coordinates around Ontario
+  * 6 job sites at real Kathmandu Valley locations (4 with jobs, 2 new with none yet)
   * 8 jobs across 3 days, with assignments
   * 20 time entries: 3 flagged, 4 approved, 1 night shift that crosses midnight,
     and 6 workers currently clocked in today
 """
 import math
+import random
 from datetime import date, datetime, time, timedelta
 
 from app import create_app
 from extensions import db
+from kathmandu_geo import LANDMARKS, random_point_near
 from models import Assignment, Job, JobSite, LocationPing, TimeEntry, User
 
 METRES_PER_DEGREE_LAT = 111_195  # ~ Earth's circumference / 360
@@ -70,23 +72,21 @@ def seed():
     db.session.add_all([admin, disp1, disp2, sup, marcus, dana, luis, jamal, priya, tom, ashley, ben])
 
     # ---- Job sites ----------------------------------------------------------------------
-    riverside = JobSite(
-        site_name="Riverside Apartments - Phase 2", address="720 Queen St E, Toronto, ON M4M 1H2",
-        latitude=43.659100, longitude=-79.350300, geofence_radius_m=200,
-    )
-    hwy41 = JobSite(
-        site_name="Hwy 41 Culvert Repair", address="Hwy 41 at Bull Creek, Kaladar, ON K0H 1Z0",
-        latitude=44.648400, longitude=-77.116200, geofence_radius_m=300,
-    )
-    northgate = JobSite(
-        site_name="Northgate Medical Center", address="5800 Yonge St, North York, ON M2M 3T3",
-        latitude=43.780600, longitude=-79.414900, geofence_radius_m=150,
-    )
-    tanner = JobSite(
-        site_name="Tanner Bridge Deck Pour", address="Tanner Rd over the Rouge River, Markham, ON L6B 1A8",
-        latitude=43.857300, longitude=-79.339500, geofence_radius_m=250,
-    )
-    db.session.add_all([riverside, hwy41, northgate, tanner])
+    # Each site sits a few hundred metres from a real landmark. The fixed seed keeps the
+    # coordinates identical on every run, so the demo script can quote them.
+    site_rng = random.Random("fieldtrack-sites")
+
+    def site(name, address, landmark, radius):
+        lat, lng = random_point_near(*LANDMARKS[landmark], 0.35, site_rng)
+        return JobSite(site_name=name, address=address, latitude=lat, longitude=lng, geofence_radius_m=radius)
+
+    kirtipur = site("Kirtipur Campus Expansion", "Kirtipur Municipality-3, Kathmandu 44618", "Kirtipur", 200)
+    koteshwor = site("Koteshwor Flyover Underpass Repair", "Koteshwor Chowk, Kathmandu 44600", "Koteshwor", 300)
+    boudha = site("Boudha Stupa Plaza Retrofit", "Boudha-6, Kathmandu 44600", "Boudhanath", 150)
+    gongabu = site("Gongabu Bus Park Resurfacing", "New Bus Park, Gongabu, Kathmandu 44600", "Gongabu", 250)
+    bhaktapur = site("Bhaktapur Heritage Walk Repaving", "Durbar Square, Bhaktapur 44800", "Bhaktapur Durbar Square", 200)
+    patan = site("Patan Durbar Drainage Upgrade", "Mangal Bazar, Lalitpur 44700", "Patan Durbar Square", 200)
+    db.session.add_all([kirtipur, koteshwor, boudha, gongabu, bhaktapur, patan])
     db.session.flush()
 
     # ---- Jobs (8 across yesterday / today / tomorrow) -----------------------------------
@@ -94,14 +94,14 @@ def seed():
         return Job(site=site, title=title, description=desc, scheduled_date=day,
                    crew_size=crew, status=status, creator=creator)
 
-    j1 = job(riverside, "Level 3 framing & sheathing", "Frame and sheath north and east walls, install steel lintels.", yesterday, 3, "Completed", disp1)
-    j2 = job(hwy41, "Culvert excavation & shoring (night)", "Night closure: excavate failed culvert and install trench shoring.", yesterday, 2, "Completed", disp2)
-    j3 = job(northgate, "Level 2 rough-in (electrical & plumbing)", "East wing rough-in; core and patch slab penetrations.", yesterday, 3, "Completed", disp1)
-    j4 = job(riverside, "Level 4 framing", "Frame Level 4 corridor and unit demising walls.", today, 3, "In progress", disp1)
-    j5 = job(tanner, "Deck pour - Span 2", "Place and finish 85 m³ deck concrete on span 2.", today, 3, "In progress", disp2)
-    j6 = job(northgate, "Level 3 rough-in (electrical & plumbing)", "West wing rough-in ahead of inspection.", today, 2, "In progress", disp1)
-    j7 = job(hwy41, "Culvert backfill & compaction", "Backfill in 300 mm lifts, compaction testing.", tomorrow, 3, "Scheduled", disp2)
-    j8 = job(tanner, "Deck curing & finishing", "Apply curing compound, saw-cut joints.", tomorrow, 2, "Scheduled", disp2)
+    j1 = job(kirtipur, "Level 3 framing & sheathing", "Frame and sheath north and east walls, install steel lintels.", yesterday, 3, "Completed", disp1)
+    j2 = job(koteshwor, "Culvert excavation & shoring (night)", "Night closure: excavate failed culvert and install trench shoring.", yesterday, 2, "Completed", disp2)
+    j3 = job(boudha, "Level 2 rough-in (electrical & plumbing)", "East wing rough-in; core and patch slab penetrations.", yesterday, 3, "Completed", disp1)
+    j4 = job(kirtipur, "Level 4 framing", "Frame Level 4 corridor and unit demising walls.", today, 3, "In progress", disp1)
+    j5 = job(gongabu, "Deck pour - Span 2", "Place and finish 85 m³ deck concrete on span 2.", today, 3, "In progress", disp2)
+    j6 = job(boudha, "Level 3 rough-in (electrical & plumbing)", "West wing rough-in ahead of inspection.", today, 2, "In progress", disp1)
+    j7 = job(koteshwor, "Culvert backfill & compaction", "Backfill in 300 mm lifts, compaction testing.", tomorrow, 3, "Scheduled", disp2)
+    j8 = job(gongabu, "Deck curing & finishing", "Apply curing compound, saw-cut joints.", tomorrow, 2, "Scheduled", disp2)
     db.session.add_all([j1, j2, j3, j4, j5, j6, j7, j8])
     db.session.flush()
 
@@ -145,21 +145,21 @@ def seed():
 
     ok = "Verified against foreman's daily log"
     y = yesterday
-    # Yesterday — Riverside (split shifts around lunch)
+    # Yesterday — Kirtipur (split shifts around lunch)
     entry(marcus, j1, at(y, 7), at(y, 11, 30), (25, -10), (30, 5), "Approved", ok)
     entry(marcus, j1, at(y, 12), at(y, 15, 30), (20, 0), (35, 15), "Approved", ok)
     entry(priya, j1, at(y, 7, 5), at(y, 11, 30), (-40, 20), (-35, 10))
     entry(priya, j1, at(y, 12), at(y, 15, 35), (-30, 15), (-45, 0))
     entry(tom, j1, at(y, 6, 55), at(y, 11, 30), (60, 40), (55, 30))
     entry(tom, j1, at(y, 12, 5), at(y, 15, 40), (50, 35), (350, 0))        # FLAGGED clock-out 350 m
-    # Yesterday — Northgate
+    # Yesterday — Boudha
     entry(dana, j3, at(y, 6, 30), at(y, 11), (10, 10), (15, -5), "Approved", ok)
     entry(dana, j3, at(y, 11, 30), at(y, 15), (5, 20), (10, 0), "Approved", ok)
     entry(ashley, j3, at(y, 6, 30), at(y, 11), (-20, 30), (-25, 20))
     entry(ashley, j3, at(y, 11, 30), at(y, 15, 5), (-15, 25), (-20, 10))
     entry(luis, j3, at(y, 7), at(y, 11, 30), (40, -40), (35, -30))
     entry(luis, j3, at(y, 12), at(y, 15, 30), (30, -35), (45, -25))
-    # Yesterday night — Hwy 41 culvert: 19:00 -> 03:30 today (crosses midnight = 8.5 h)
+    # Yesterday night — Koteshwor culvert: 19:00 -> 03:30 today (crosses midnight = 8.5 h)
     entry(jamal, j2, at(y, 19), at(today, 3, 30), (80, 120), (60, 100))
     entry(ben, j2, at(y, 19, 10), at(today, 3, 30), (610, 0), (90, 110))  # FLAGGED clock-in 610 m
 

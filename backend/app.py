@@ -12,6 +12,7 @@ from extensions import db, jwt
 from routes.assignments import assignments_bp
 from routes.dashboard import dashboard_bp
 from routes.jobs import jobs_bp
+from routes.map import map_bp
 from routes.reports import reports_bp
 from routes.sites import sites_bp
 from routes.time_entries import time_entries_bp
@@ -32,7 +33,7 @@ def create_app(overrides=None):
 
     for bp in (
         auth_bp, users_bp, sites_bp, jobs_bp, assignments_bp,
-        time_entries_bp, reports_bp, dashboard_bp,
+        time_entries_bp, reports_bp, dashboard_bp, map_bp,
     ):
         app.register_blueprint(bp)
 
