@@ -1,7 +1,10 @@
 """FieldTrack API — Flask application factory.
 
 Run the development server with:   python app.py      (http://localhost:5000)
+Debug mode (auto-reload + interactive tracebacks) is off unless FLASK_DEBUG=1 is set.
 """
+import os
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
@@ -84,4 +87,8 @@ def _register_error_handlers(app):
 
 
 if __name__ == "__main__":
-    create_app().run(host="127.0.0.1", port=5000, debug=True)
+    create_app().run(
+        host=os.environ.get("HOST", "127.0.0.1"),
+        port=int(os.environ.get("PORT", "5000")),
+        debug=os.environ.get("FLASK_DEBUG", "0").lower() in ("1", "true", "yes"),
+    )
