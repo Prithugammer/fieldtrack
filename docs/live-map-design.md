@@ -3,7 +3,7 @@
 The Live Map (FR-13, UC13) shows every job site with its geofence and where each worker is.
 This document explains the design decisions behind it. The code is in
 `backend/simulation.py`, `backend/kathmandu_geo.py`, `backend/routes/map.py` and
-`frontend/src/pages/LiveMap.jsx`.
+`frontend/src/pages/LiveMap.jsx`, with road routing in `backend/roads.py`.
 
 ## 1. Why the positions are simulated
 
@@ -39,6 +39,10 @@ one mistakes it for real GPS.
   each with a radius (550–700 m) and a speed multiplier (0.25–0.35).
 - Seeded job sites sit a few hundred metres from a landmark (fixed random seed, so the
   coordinates are identical every time `seed.py` runs).
+- **The road network:** `backend/data/kathmandu_roads.json` holds the valley's main roads
+  (motorway down to unclassified, about 1,700 km) from OpenStreetMap. It is built once by
+  `backend/tools/build_road_network.py` and committed, so the app routes offline with a small
+  A* search (`roads.py`) and no extra packages. Road data © OpenStreetMap contributors (ODbL).
 
 ## 3. Routes: deterministic and plausible
 
@@ -55,8 +59,12 @@ Each worker assigned to a job today gets a route generated from a random seed ma
   *Why:* checking each waypoint on its own was not enough — two waypoints that are each a
   reasonable detour can still combine into a zig-zag across the city (testing found one route
   at 1.89×). 1.3× is a typical ratio of road distance to straight-line distance in a city,
-  so routes look like real commutes. Measured over 14,400 routes: worst case exactly 1.30×,
-  74 % still use landmark waypoints, 76 % still pass a traffic junction.
+  so routes look like real commutes.
+- **Along the roads:** the worker sets off from the road point nearest their start, drives
+  the shortest road path through the waypoints, and finishes with a short walk (under ~200 m
+  for the seeded sites) from the nearest road onto the site. If the waypoints make the *drive*
+  more than 1.3× the shortest drive (two landmarks can be close as the crow flies but far
+  apart by road), the worker drives direct instead.
 - **Duration:** distance at the worker's usual speed (15–28 km/h, Kathmandu traffic), kept to
   **8–35 minutes**.
 
@@ -93,7 +101,10 @@ previous one arrives.
 
 ## 7. Front-end decisions
 
-- **Polling every 4 s** with a CSS transform transition so markers glide rather than jump.
+- **Polling every second** with a CSS transform transition so markers glide rather than jump.
+  The glide is a straight line, so the interval is kept short: one second covers about 100 m
+  of road, and the marker stays on the road around bends. (At 4 s it cut corners by
+  several hundred metres and workers appeared to fly across buildings.)
 - **Opening view** frames all job sites (not the whole valley box), so a 200 m geofence is about
   24 px across instead of a few pixels hidden under its pin; site pins are small dots for the
   same reason.
@@ -107,6 +118,7 @@ previous one arrives.
 ## 8. Limitations
 
 - Positions are not real; the map demonstrates the interface a real GPS feed would drive.
-- Routes are straight segments between landmarks, not snapped to the road network.
+- Routing ignores one-way streets and road class (a lane counts the same as a highway), and
+  the road network is a snapshot: rebuild it with `tools/build_road_network.py` to refresh.
 - Every worker makes one commute per cycle; there are no lunch trips or site-to-site moves.
 - The map shows assignments for today's date only.

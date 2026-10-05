@@ -45,9 +45,9 @@
   background: rgba(211, 58, 58, 0.08);
 }
 
-/* Workers glide to each new simulated position instead of snapping (poll is every 4 s). */
+/* Workers glide to each new simulated position instead of snapping (poll is every 1 s). */
 .leaflet-marker-icon.ft-glide {
-  transition: transform 3.8s linear;
+  transition: transform 0.95s linear;
 }
 
 .ft-no-glide .leaflet-marker-icon.ft-glide {

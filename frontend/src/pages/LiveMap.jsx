@@ -9,8 +9,9 @@ import TopBar from '../components/TopBar'
 import { Alert, EmptyState, ErrorState, LoadingState } from '../components/States'
 
 // Positions are SIMULATED on the server (backend/simulation.py) — there is no mobile app
-// yet — and refreshed on this interval. Markers glide between polls (see live-map.css).
-const POLL_MS = 4000
+// yet — and refreshed on this interval. Markers glide in a straight line between polls (see
+// live-map.css), so polls are kept short enough (~100 m of road) that the glide hugs the road.
+const POLL_MS = 1000
 // How long markers fade when the simulated morning restarts (matches live-map.css).
 const FADE_MS = 600
 // On-site workers sharing a site fan out on a ring this many pixels around the site.

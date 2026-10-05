@@ -7,7 +7,9 @@ answers "where would this worker be right now?".
 How it works:
   * Every worker assigned to a job today gets a route, generated from a random seed made
     of their user_id and today's date, so it is identical on every request. The route runs
-    from a landmark a few km away, through up to 2 landmark waypoints, to their job site.
+    from a landmark a few km away, through up to 2 landmark waypoints, to their job site,
+    and follows the real road network (roads.py) the whole way, ending with a short walk
+    from the nearest road onto the site.
   * Real time loops through a simulated morning dispatch window (SIM_DAY_START to
     SIM_DAY_END) every CYCLE_SECONDS. Departures are staggered so commutes overlap: at any
     moment of the window some workers are on the road and some have already arrived.
@@ -21,10 +23,12 @@ How it works:
 import math
 import random
 import time
+from functools import lru_cache
 from itertools import combinations
 
 from geofence import haversine
 from kathmandu_geo import LANDMARKS, TRAFFIC_HOTSPOTS, random_point_near
+from roads import road_path, snap
 
 CYCLE_SECONDS = 300  # one simulated window every 5 real minutes
 SIM_DAY_START = 6 * 60  # 6:00 AM, in minutes after midnight
@@ -32,7 +36,8 @@ SIM_DAY_END = 7 * 60 + 15  # 7:15 AM (the morning commute; sized so someone is a
 PIECE_M = 100  # routes are split into pieces this long for the traffic check
 
 START_MIN_KM, START_MAX_KM = 2.5, 10.0
-MAX_ROUTE_RATIO = 1.3  # a whole route may be at most 30% longer than the straight line
+MAX_ROUTE_RATIO = 1.3  # waypoints may stretch the line from start to site by at most 30%
+MAX_DETOUR = 1.3  # ...and the drive through them by at most 30% over the shortest drive
 
 
 def _dist(a, b):
@@ -51,8 +56,25 @@ def _hotspot_at(point):
     return None
 
 
+def _length(points):
+    return sum(_dist(a, b) for a, b in zip(points, points[1:]))
+
+
+@lru_cache(maxsize=512)
+def _road_route(user_id, day, site_lat, site_lng):
+    return _build_route(user_id, day, site_lat, site_lng)
+
+
 def build_route(user_id, day, site_lat, site_lng):
-    """Deterministic commute for one worker on one day (same inputs -> same route)."""
+    """Deterministic commute for one worker on one day (same inputs -> same route).
+
+    Cached, since road routing is the expensive part and the map polls every second; callers
+    get their own copy because plan_departures() writes into it.
+    """
+    return dict(_road_route(user_id, day, site_lat, site_lng))
+
+
+def _build_route(user_id, day, site_lat, site_lng):
     rng = random.Random(f"route:{user_id}:{day.isoformat()}")
     end = (site_lat, site_lng)
 
@@ -61,7 +83,7 @@ def build_route(user_id, day, site_lat, site_lng):
         n for n in names if START_MIN_KM * 1000 <= _dist(LANDMARKS[n], end) <= START_MAX_KM * 1000
     ]
     start_name = rng.choice(starts or names)
-    start = random_point_near(*LANDMARKS[start_name], 0.4, rng)
+    start = snap(*random_point_near(*LANDMARKS[start_name], 0.4, rng))  # set off from a road
     direct = _dist(start, end)
 
     def detour(n):
@@ -96,9 +118,17 @@ def build_route(user_id, day, site_lat, site_lng):
         if chosen:
             break
 
+    # Drive along the roads. If the waypoints make the drive much longer than the shortest
+    # one (two landmarks can be close as the crow flies but far apart by road), go direct.
+    road = road_path(points)
+    direct_road = road_path([start, end])
+    if chosen and _length(road) > MAX_DETOUR * _length(direct_road):
+        chosen, road = [], direct_road
+    points = road + [end]  # ...then walk from the nearest road onto the site
+
     # Commute time without traffic: distance at this worker's usual speed through the valley,
     # kept within 8-35 minutes.
-    length_km = sum(_dist(a, b) for a, b in zip(points, points[1:])) / 1000
+    length_km = _length(points) / 1000
     base_minutes = min(35, max(8, round(length_km / rng.uniform(15, 28) * 60)))
 
     # Split into short pieces; a piece whose midpoint is in a hotspot is slowed down.
@@ -121,7 +151,7 @@ def build_route(user_id, day, site_lat, site_lng):
         "user_id": user_id,
         "start_name": start_name,
         "via_names": chosen,
-        "points": points,
+        "points": points,  # road points from start to the nearest road, then the site
         "pieces": pieces,
         "length_m": total_m,
         "base_minutes": base_minutes,

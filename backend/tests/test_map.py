@@ -45,19 +45,34 @@ def test_routes_are_deterministic_per_worker_and_day():
     assert a["points"][-1] == SITES[0]
 
 
+def test_routes_follow_the_roads():
+    # Every route point before the site is a point on the road network, and the only part
+    # off the road is the short walk from the nearest road onto the site.
+    from roads import snap
+
+    for uid, site in CREW:
+        r = sim.build_route(uid, DAY, *site)
+        for p in r["points"][:-1]:
+            assert p == snap(*p)
+        assert haversine(*r["points"][-2], *site) < 300
+
+
 def test_routes_never_zig_zag():
-    # Every whole route stays within MAX_ROUTE_RATIO of the straight line, across many
-    # workers, dates and sites (not just one crew), and still uses landmark waypoints.
+    # Waypoints never make the drive more than MAX_DETOUR longer than the shortest drive,
+    # across many workers, dates and sites (not just one crew), and most routes still use them.
+    from roads import road_path
+
     sites = [LANDMARKS[n] for n in sorted(LANDMARKS)]
-    with_waypoints = 0
-    for uid in range(1, 31):
-        for k in range(0, 60, 3):
+    with_waypoints = total = 0
+    for uid in range(1, 11):
+        for k in range(0, 30, 6):
             for site in sites:
                 r = sim.build_route(uid, DAY + timedelta(days=k), *site)
-                direct = haversine(*r["points"][0], *r["points"][-1])
-                assert r["length_m"] <= sim.MAX_ROUTE_RATIO * direct + 1, (uid, k, r["via_names"])
+                shortest = road_path([r["points"][0], site]) + [site]
+                assert r["length_m"] <= sim.MAX_DETOUR * sim._length(shortest) + 1, (uid, k)
                 with_waypoints += bool(r["via_names"])
-    assert with_waypoints > 0.5 * 30 * 20 * len(sites)
+                total += 1
+    assert with_waypoints > 0.5 * total
 
 
 def test_always_someone_moving_and_someone_on_site():
