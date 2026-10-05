@@ -22,7 +22,14 @@ export default function TopBar({ title, subtitle, actions }) {
               <div className="topbar__name">{user.full_name}</div>
               <div className="topbar__role">{user.role}</div>
             </div>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={logout} title="Sign out">
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={logout}
+              title="Sign out"
+              // the text label is hidden on narrow screens, leaving only the icon
+              aria-label="Sign out"
+            >
               <IconLogout size={16} />
               <span className="topbar__meta">Sign out</span>
             </button>

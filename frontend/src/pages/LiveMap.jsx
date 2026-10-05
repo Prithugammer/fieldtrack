@@ -77,6 +77,14 @@ function placeWorkers(live) {
     })
 }
 
+/**
+ * Leaflet makes every clickable marker a focusable role="button" with no text, so name it for
+ * screen readers once it is on the map (the popup it opens holds the details).
+ */
+function markerName(label) {
+  return { add: (e) => e.target.getElement()?.setAttribute('aria-label', label) }
+}
+
 /** Turn the glide off while Leaflet zooms, otherwise markers trail behind the map. */
 function ZoomGlideGuard() {
   const timer = useRef(null)
@@ -250,7 +258,13 @@ export default function LiveMap() {
             />
           ))}
           {live.job_sites.map((s) => (
-            <Marker key={`site-${s.id}`} position={[s.lat, s.lng]} icon={siteIcon} zIndexOffset={-100}>
+            <Marker
+              key={`site-${s.id}`}
+              position={[s.lat, s.lng]}
+              icon={siteIcon}
+              zIndexOffset={-100}
+              eventHandlers={markerName(`Job site: ${s.name}`)}
+            >
               <Popup>
                 <div className="map-popup">
                   <strong>{s.name}</strong>
@@ -281,6 +295,7 @@ export default function LiveMap() {
               key={w.status === 'Off duty' ? `${w.id}` : `${w.id}-${live.cycle}`}
               position={position}
               icon={workerIcon(variant, dx, dy)}
+              eventHandlers={markerName(`Worker: ${w.name}`)}
             >
               <Popup>
                 <div className="map-popup">
