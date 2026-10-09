@@ -28,7 +28,7 @@ export function EmptyState({ title = 'Nothing here yet', message, action }) {
 export function ErrorState({ message, onRetry }) {
   return (
     <div className="state">
-      <div className="state__title" style={{ color: 'var(--color-red)' }}>
+      <div className="state__title" style={{ color: 'var(--color-red-text)' }}>
         Couldn’t load this data
       </div>
       <div>{message}</div>

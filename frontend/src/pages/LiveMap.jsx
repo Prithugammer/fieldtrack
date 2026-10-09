@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
-import { Circle, MapContainer, Marker, Popup, TileLayer, Tooltip, useMapEvents } from 'react-leaflet'
+import { Circle, MapContainer, Marker, Polyline, Popup, TileLayer, useMapEvents } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import '../styles/live-map.css'
 import { api } from '../api/client'
 import { useApi } from '../api/useApi'
+import SafetyPanel from '../components/SafetyPanel'
 import TopBar from '../components/TopBar'
 import { Alert, EmptyState, ErrorState, LoadingState } from '../components/States'
+import { useTheme } from '../context/ThemeContext'
 
 // Positions are SIMULATED on the server (backend/simulation.py) — there is no mobile app
 // yet — and refreshed on this interval. Markers glide in a straight line between polls (see
@@ -14,6 +16,19 @@ import { Alert, EmptyState, ErrorState, LoadingState } from '../components/State
 const POLL_MS = 1000
 // How long markers fade when the simulated morning restarts (matches live-map.css).
 const FADE_MS = 600
+// Base map: Stadia Maps "Alidade Smooth" — English place names, a light and a dark style to
+// match the app theme, and {r} asks for sharp @2x tiles on high-density screens. It is free
+// without a key on localhost; a hosted deployment needs a free Stadia account for its domain.
+const TILES = {
+  light: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
+  dark: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+}
+const TILE_ATTRIBUTION =
+  '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+// The selected worker's route: a white line with a thin dark edge, so it reads on both the
+// light and the dark base map.
+const ROUTE_CASING = { color: '#14213d', weight: 7, opacity: 0.45, lineCap: 'round', lineJoin: 'round' }
+const ROUTE_LINE = { color: '#ffffff', weight: 4, opacity: 1, lineCap: 'round', lineJoin: 'round' }
 // On-site workers sharing a site fan out on a ring this many pixels around the site.
 const FAN_RADIUS_PX = 11
 
@@ -26,6 +41,15 @@ const WORKER_VARIANTS = {
 // One icon object per look: react-leaflet replaces the marker element whenever the icon
 // object changes, which would cut the glide short, so icons are created once and reused.
 const iconCache = {}
+// Marker look for a worker: safety states win over the normal commute colours.
+function workerVariant(w) {
+  if (w.status === 'EMERGENCY') return 'emergency'
+  if (w.status === 'Post-incident') return 'incident'
+  if (w.safety?.checkin > 0) return 'warning'
+  if (w.status === 'Stopped') return 'stopped'
+  return w.near_traffic ? 'traffic' : WORKER_VARIANTS[w.status]
+}
+
 function workerIcon(variant, dx = 0, dy = 0, ghost = false) {
   const key = `${variant}:${dx}:${dy}:${ghost}`
   if (!iconCache[key]) {
@@ -63,7 +87,7 @@ function placeWorkers(live) {
   return live.workers
     .filter((w) => w.lat !== null)
     .map((w) => {
-      const variant = w.near_traffic ? 'traffic' : WORKER_VARIANTS[w.status]
+      const variant = workerVariant(w)
       const group = w.status === 'On site' ? onSite[w.site_name] : null
       const site = sites[w.site_name]
       if (group && group.length > 1 && site) {
@@ -127,11 +151,74 @@ function formatKm(m) {
 }
 
 /**
+ * Popup section: the worker's safety state, plus the demo controls that stand in for the worker's
+ * phone and for chance (trigger an accident, press SOS, reply "I'm OK", start/end a break).
+ */
+function SafetyControls({ worker: w, onAction }) {
+  const s = w.safety
+  if (!s) return null
+  const onShift = ['On site', 'In transit'].includes(w.sim_status)
+  const flagged = s.state !== 'NORMAL'
+  return (
+    <>
+      {flagged && (
+        <div className="map-popup__safety">
+          {s.state === 'EMERGENCY' && 'EMERGENCY — awaiting supervisor'}
+          {s.state === 'POST_INCIDENT' && 'Post-incident'}
+          {s.checkin > 0 && `Safety check-in ${s.checkin} unanswered`}
+        </div>
+      )}
+      {s.on_break && <div className="muted">On break</div>}
+      {s.break_zone && <div className="muted">In rest area: {s.break_zone}</div>}
+      <div className="map-popup__actions">
+        {s.checkin > 0 && !s.incapacitated && (
+          <button
+            type="button"
+            className="btn btn--success btn--sm"
+            onClick={() => onAction(`workers/${w.id}/respond`)}
+          >
+            I&apos;m OK
+          </button>
+        )}
+        {(onShift || s.stopped) && s.state !== 'EMERGENCY' && !s.stopped && (
+          <button
+            type="button"
+            className="btn btn--danger btn--sm"
+            onClick={() => onAction(`workers/${w.id}/accident`)}
+          >
+            Trigger accident
+          </button>
+        )}
+        {(onShift || s.stopped) && s.state !== 'EMERGENCY' && (
+          <button
+            type="button"
+            className="btn btn--danger btn--sm"
+            onClick={() => onAction(`workers/${w.id}/sos`)}
+          >
+            SOS
+          </button>
+        )}
+        {onShift && !s.stopped && (
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={() => onAction(`workers/${w.id}/break`, { on_break: !s.on_break })}
+          >
+            {s.on_break ? 'End break' : 'Start break'}
+          </button>
+        )}
+      </div>
+    </>
+  )
+}
+
+/**
  * Stand-in for the future mobile app's live GPS: polls the simulated positions computed by
  * backend/simulation.py. Simulated (not random) so every demo is repeatable and still shows the
  * real ideas: geofences, traffic delays, and workers arriving on site.
  */
 export default function LiveMap() {
+  const { theme } = useTheme()
   const bounds = useApi('/map/bounds')
   const [live, setLive] = useState(null)
   const [clock, setClock] = useState(null)
@@ -140,12 +227,19 @@ export default function LiveMap() {
   const [ghosts, setGhosts] = useState([])
   const [entering, setEntering] = useState(false)
   const prevLive = useRef(null)
+  // The worker whose popup is open: their remaining route is fetched with each poll and drawn.
+  const [selected, setSelected] = useState(null)
+  const selectedRef = useRef(null)
   const fadeTimer = useRef(null)
   const mapRef = useRef(null)
+  const [actionError, setActionError] = useState(null)
 
   const poll = useCallback(async () => {
     try {
-      const [state, sim] = await Promise.all([api('/map/live'), api('/map/sim-clock')])
+      const [state, sim] = await Promise.all([
+        api('/map/live', { params: { route: selectedRef.current } }),
+        api('/map/sim-clock'),
+      ])
       const prev = prevLive.current
       if (prev && prev.cycle !== state.cycle) {
         setGhosts(placeWorkers(prev).filter((p) => p.variant !== 'off'))
@@ -164,6 +258,31 @@ export default function LiveMap() {
       setError(err)
     }
   }, [])
+
+  // A safety control (accident, SOS, "I'm OK", resolve...): POST it, then refresh straight away.
+  const safetyAction = useCallback(
+    async (path, body) => {
+      try {
+        await api(`/safety/${path}`, { method: 'POST', body })
+        setActionError(null)
+        await poll()
+      } catch (err) {
+        setActionError(err.message)
+      }
+    },
+    [poll],
+  )
+
+  // Select a worker (their popup opened) or clear the selection (it closed). Polls straight
+  // away so the route appears without waiting for the next tick.
+  const select = useCallback(
+    (id) => {
+      selectedRef.current = id
+      setSelected(id)
+      if (id !== null) poll()
+    },
+    [poll],
+  )
 
   useEffect(() => {
     poll()
@@ -189,6 +308,7 @@ export default function LiveMap() {
   }, [bounds.data, live === null])
 
   const workers = live?.workers || []
+  const selectedPath = workers.find((w) => w.id === selected)?.path || null
   const count = (pred) => workers.filter(pred).length
   const legend = [
     { variant: 'onsite', label: 'On site', n: count((w) => w.status === 'On site') },
@@ -199,6 +319,8 @@ export default function LiveMap() {
     },
     { variant: 'traffic', label: 'Delayed in traffic', n: count((w) => w.near_traffic) },
     { variant: 'off', label: 'Off duty', n: count((w) => w.status === 'Off duty') },
+    { variant: 'warning', label: 'Safety check-in', n: count((w) => w.safety?.checkin > 0) },
+    { variant: 'emergency', label: 'EMERGENCY', n: count((w) => w.status === 'EMERGENCY') },
   ]
   const notStarted = count((w) => w.status === 'Not started')
 
@@ -218,7 +340,6 @@ export default function LiveMap() {
   } else if (live.job_sites.length === 0) {
     body = <EmptyState title="No job sites yet" message="Add a job site to see it on the map." />
   } else {
-    const b = bounds.data
     body = (
       <div className={`live-map${entering ? ' live-map--entering' : ''}`}>
         <MapContainer
@@ -234,20 +355,7 @@ export default function LiveMap() {
           className="live-map__canvas"
         >
           <ZoomGlideGuard />
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          />
-          {b.traffic_hotspots.map((h) => (
-            <Circle
-              key={h.name}
-              center={[h.lat, h.lng]}
-              radius={h.radius_m}
-              pathOptions={{ color: '#d33a3a', weight: 1, dashArray: '4 4', fillOpacity: 0.06 }}
-            >
-              <Tooltip>Traffic hotspot: {h.name}</Tooltip>
-            </Circle>
-          ))}
+          <TileLayer key={theme} url={TILES[theme]} attribution={TILE_ATTRIBUTION} maxZoom={20} />
           {live.job_sites.map((s) => (
             <Circle
               key={`fence-${s.id}`}
@@ -279,6 +387,10 @@ export default function LiveMap() {
               </Popup>
             </Marker>
           ))}
+          {selectedPath && (
+            <Polyline positions={selectedPath} pathOptions={ROUTE_CASING} interactive={false} />
+          )}
+          {selectedPath && <Polyline positions={selectedPath} pathOptions={ROUTE_LINE} interactive={false} />}
           {ghosts.map(({ w, variant, dx, dy, position }) => (
             <Marker
               key={`ghost-${w.id}-${prevLive.current?.cycle}`}
@@ -295,7 +407,11 @@ export default function LiveMap() {
               key={w.status === 'Off duty' ? `${w.id}` : `${w.id}-${live.cycle}`}
               position={position}
               icon={workerIcon(variant, dx, dy)}
-              eventHandlers={markerName(`Worker: ${w.name}`)}
+              eventHandlers={{
+                ...markerName(`Worker: ${w.name}`),
+                popupopen: () => select(w.id),
+                popupclose: () => selectedRef.current === w.id && select(null),
+              }}
             >
               <Popup>
                 <div className="map-popup">
@@ -306,10 +422,15 @@ export default function LiveMap() {
                   <div>
                     {w.status}
                     {w.status === 'In transit' && w.distance_remaining_m !== null && (
-                      <span className="muted"> · {formatKm(w.distance_remaining_m)} to site</span>
+                      <>
+                        {' · '}
+                        <strong>{formatKm(w.distance_remaining_m)} left</strong>
+                        <span className="muted"> to site</span>
+                      </>
                     )}
                   </div>
                   {w.near_traffic && <div className="map-popup__delay">Delayed near {w.hotspot}</div>}
+                  <SafetyControls worker={w} onAction={safetyAction} />
                 </div>
               </Popup>
             </Marker>
@@ -349,31 +470,47 @@ export default function LiveMap() {
         {error && live && (
           <Alert tone="warning">Lost connection to the server — retrying. {error.message}</Alert>
         )}
+        {actionError && (
+          <Alert tone="error" onClose={() => setActionError(null)}>
+            {actionError}
+          </Alert>
+        )}
+        {live?.safety && <SafetyPanel safety={live.safety} workers={workers} onAction={safetyAction} />}
         <div className="card">
           <div className="live-map__legend">
             {legend.map((item) => (
               <span key={item.variant} className="live-map__legend-item">
-                <span className={`ft-worker ft-worker--${item.variant}`} /> {item.label}
-                {live && <span className="muted"> ({item.n})</span>}
+                {/* every symbol sits in the same fixed-size slot so the labels line up */}
+                <span className="live-map__swatch">
+                  <span className={`ft-worker ft-worker--${item.variant}`} />
+                </span>
+                <span>
+                  {item.label}
+                  {live && <span className="muted live-map__count">{item.n}</span>}
+                </span>
               </span>
             ))}
             <span className="live-map__legend-item">
-              <span className="ft-site" /> Job site + geofence
+              <span className="live-map__swatch">
+                <span className="ft-site" />
+              </span>
+              <span>Job site + geofence</span>
             </span>
-            <span className="live-map__legend-item">
-              <span className="live-map__hotspot-swatch" /> Traffic hotspot
-            </span>
-            {live && notStarted > 0 && <span className="muted small">{notStarted} not on the road yet</span>}
+            {live && notStarted > 0 && (
+              <span className="muted small live-map__pending">{notStarted} not on the road yet</span>
+            )}
           </div>
-          {live && workers.every((w) => w.status === 'Off duty') && (
+          <div className="live-map__body">
+            {live && workers.every((w) => w.status === 'Off duty') && (
+              <div className="muted small live-map__note">
+                No workers are assigned today — assign crews on the Jobs page to see them commute.
+              </div>
+            )}
+            {body}
             <div className="muted small live-map__note">
-              No workers are assigned today — assign crews on the Jobs page to see them commute.
+              Stand-in for the mobile app&apos;s live GPS: positions are simulated from the server clock, one
+              compressed morning commute every few minutes.
             </div>
-          )}
-          {body}
-          <div className="muted small live-map__note">
-            Stand-in for the mobile app&apos;s live GPS: positions are simulated from the server clock, one
-            compressed morning commute every few minutes.
           </div>
         </div>
       </div>

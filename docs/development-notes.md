@@ -50,7 +50,7 @@ That feedback became the scope for the rest of the project:
 ### The triple constraint in practice
 
 The project is a clear example of the scope–time–cost triangle. **Cost** was fixed at zero:
-every tool is free (Python, Flask, SQLite, React, Vite, Leaflet with OpenStreetMap tiles,
+every tool is free (Python, Flask, SQLite, React, Vite, Leaflet with OpenStreetMap-based map tiles,
 Figma's free tier, GitHub). **Time** was compressed — one person instead of three, and one day
 for what had been planned as four. With cost and time both fixed, **scope** was the only side
 that could move, so it was cut: the mobile app was removed and the administrative side was

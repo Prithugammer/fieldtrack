@@ -27,48 +27,51 @@ Everything needed to present FieldTrack live. For what the project is and how it
 
 ## Demo script (read from this)
 
-On a fresh seed, **Ben Okafor** is unassigned today and **Marcus Reyes** is already on
+On a fresh seed, **Bishal Neupane** is unassigned today and **Ramesh Karki** is already on
 *Level 4 framing* today.
 
 1. **Log in as Dispatcher.** Click the *Dispatcher* demo button → **Sign in**.
 2. **Create a job.** **Jobs → New job**. Optional: click **Create job** empty first to show the
    inline *"Job site is required."* Then set site *Kirtipur Campus Expansion*, title
    *Level 4 drywall prep*, date **today**, crew size **2** → **Create job**.
-3. **Assign a worker.** On *Level 4 drywall prep* click **Assign worker** → **Ben Okafor** →
-   **Assign to job**. Ben appears under *Current crew*. Click **Done**.
+3. **Assign a worker.** On *Level 4 drywall prep* click **Assign worker** → **Bishal Neupane** →
+   **Assign to job**. Bishal appears under *Current crew*. Click **Done**.
 4. **Double-booking (409).** On *Level 4 framing* (also today) click **Assign worker** →
-   **Ben Okafor** → **Assign to job**. Under the Worker field: *"Ben Okafor is already assigned
+   **Bishal Neupane** → **Assign to job**. Under the Worker field: *"Bishal Neupane is already assigned
    to 'Level 4 drywall prep' … A worker can only be booked on one job per day."*
-   (Alternative: Marcus Reyes on the new job names *Level 4 framing* instead.)
+   (Alternative: Ramesh Karki on the new job names *Level 4 framing* instead.)
 5. **Inside the geofence.** **Sign out** → *Supervisor* → **Sign in**. **Time Entries → Record
-   time entry**: Ben Okafor, clock-in **today 07:00**, job *Level 4 drywall prep*. Click **On site
+   time entry**: Bishal Neupane, clock-in **today 07:00**, job *Level 4 drywall prep*. Click **On site
    (30 m)**, set clock-out **today 11:30**, click the second **On site (30 m)** → **Save entry**.
    Green banner: *"Clock-in was 30 m from … (inside the 200 m geofence)"*. The row is not flagged.
-6. **500 m away.** **Record time entry**: Ben Okafor, clock-in **today 12:00**, same job, click
+6. **500 m away.** **Record time entry**: Bishal Neupane, clock-in **today 12:00**, same job, click
    **500 m away**; clock-out **today 15:30**, **On site (30 m)** → **Save entry**. Amber banner:
    *"FLAGGED for review — Clock-in 500 m from site (limit 200 m)"*. The entry is still saved.
-7. **Review and approve.** Set **Geofence → Flagged only**: 4 amber rows. On Ben's 12:00 row
+7. **Review and approve.** Set **Geofence → Flagged only**: 4 amber rows. On Bishal's 12:00 row
    click **Approve**, then **Approve** with no reason: *"A reason is required for the audit
-   trail."* Type *"Foreman confirmed Ben was at the lay-down yard"* → **Approve**. The row shows
-   *Approved* plus *Greg Hanson: "…"*.
-8. **Reports and CSV.** **Reports**: *Hours by worker* shows Ben with **3.50 h** approved, *Hours
+   trail."* Type *"Foreman confirmed Bishal was at the lay-down yard"* → **Approve**. The row shows
+   *Approved* plus *Bikash Thapa: "…"*.
+8. **Reports and CSV.** **Reports**: *Hours by worker* shows Bishal with **3.50 h** approved, *Hours
    by job* shows *Level 4 drywall prep* at **8.00 h** (1 worker, 2 entries), and *Flagged
    entries* lists 4. Click **Download CSV** and open it. It has the same entries, hours and
    approvals.
 9. **Live Map.** Click **Live Map**. Point out the *Simulated time* label at the top right:
-   this stands in for the mobile app's live GPS, replaying a compressed 6:00–7:15 AM commute
+   this stands in for the mobile app's live GPS, replaying a compressed 6:00–6:45 AM commute
    every 5 minutes. The *New cycle in m:ss* countdown next to it shows when the morning
    restarts. If it's under ~0:30, wait for the restart (markers fade out and back in) before
-   pointing things out. Point at an amber worker gliding toward a site, and click it to show
-   the job and distance left (slow workers in traffic are easier to click than fast ones). If a
-   worker has an orange ring, click it to show *"Delayed near Chabahil"* (or another junction):
-   traffic hotspots slow workers down. Each site is a small dot inside its orange geofence
-   circle. Green workers are on site, and when several share a site they fan out around its dot
-   so each can be clicked. Ben, assigned in step 3, is no longer Off duty: he now has a route
+   pointing things out. Around five workers are always working, on the road or on site, and one more sets off
+   partway through each cycle. Point at an amber worker gliding toward a site, and click it:
+   the popup shows the job and the km left, and a white line shows the route they will follow
+   to the site, shrinking as they drive (slow workers in traffic are easier to click than fast
+   ones). If a
+   worker is red, click it to show *"Delayed near Chabahil"* (or another junction): busy
+   junctions slow workers down (the junctions themselves are not drawn on the map). Each site
+   is a small dot inside its orange geofence circle. Green workers are on site, and when several share a site they fan out around its dot
+   so each can be clicked. Bishal, assigned in step 3, is no longer Off duty: he now has a route
    to Kirtipur. If you zoom or drag too far, **Reset view** (top right of the map) brings it back.
 
 **Bonus talking points:** as Dispatcher there is no Approve button, and the API returns 403
-(`@role_required`). *Culvert excavation & shoring (night)* has Jamal's 8.50 h shift from 19:00
+(`@role_required`). *Culvert excavation & shoring (night)* has Suresh's 8.50 h shift from 19:00
 to 03:30 the next day (hours computed across midnight).
 
 ## Demo logins

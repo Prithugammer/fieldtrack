@@ -9,8 +9,8 @@ and, where noted, by a database constraint).
 | Field | Type | Size | Required | Validation rule | Example |
 |-------|------|------|----------|-----------------|---------|
 | user_id | Integer | — | Yes (PK, auto) | Auto-increment primary key | `5` |
-| full_name | String | 100 | Yes | 2–100 characters, trimmed | `Marcus Reyes` |
-| email | String | 120 | Yes | 5–120 characters, valid email format; **UNIQUE**; stored lower-case | `marcus.reyes@fieldtrack.com` |
+| full_name | String | 100 | Yes | 2–100 characters, trimmed | `Ramesh Karki` |
+| email | String | 120 | Yes | 5–120 characters, valid email format; **UNIQUE**; stored lower-case | `ramesh.karki@fieldtrack.com` |
 | password_hash | String | 128 | Staff only | bcrypt hash of a password ≥ 8 characters; required for Admin/Dispatcher/Supervisor, NULL for Workers (they do not log in) | `$2b$12$Kx…` |
 | phone | String | 20 | No | Digits, spaces, `+ - ( ) .` only; 7–20 characters | `416-555-0142` |
 | role | String | 20 | Yes | One of `Admin`, `Dispatcher`, `Supervisor`, `Worker` (CHECK constraint) | `Worker` |

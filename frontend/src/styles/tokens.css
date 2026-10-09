@@ -4,6 +4,8 @@
  * hard-code values. Spacing follows an 8px grid.
  */
 :root {
+  color-scheme: light;
+
   /* Brand */
   --color-navy: #14213d;
   --color-navy-700: #1d2d52;
@@ -19,6 +21,12 @@
   --color-border: #e5e7eb;
   --color-row-hover: #f9fafb;
 
+  /* Roles that change with the theme (see the dark theme at the end of this file) */
+  --color-surface: #ffffff; /* cards, top bar, inputs, dialogs */
+  --color-heading: var(--color-navy); /* links, navy chips and accents drawn on a surface */
+  --color-btn-navy: var(--color-navy);
+  --color-btn-navy-hover: var(--color-navy-700);
+
   /* Status */
   --color-green: #1b9e4b;
   --color-amber: #f5a623;
@@ -30,6 +38,7 @@
   --color-red-tint: #fbeaea;
   --color-orange-tint: #fff1e5;
   --color-navy-tint: #e8ebf2;
+  --color-amber-tint-strong: #fdecc8; /* flagged row on hover */
   --color-amber-text: #8a5a00; /* readable text on amber tint */
   /* Darker text shades for status chips so small text meets WCAG AA (>= 4.5:1) on its tint */
   --color-green-text: #157c3b;
@@ -70,4 +79,42 @@
   /* Layout */
   --sidebar-width: 240px;
   --topbar-height: 72px;
+}
+
+/*
+ * Dark theme. ThemeContext sets data-theme on <html> (and index.html sets it before the first
+ * paint, so there is no flash of the light theme). Only colours change; brand orange, the
+ * navy sidebar and every status hue keep their meaning, with tints and text shades re-tuned
+ * so chip text still meets WCAG AA on its tint.
+ */
+:root[data-theme='dark'] {
+  color-scheme: dark; /* native date pickers, selects and scrollbars follow */
+
+  --color-bg: #0f1420;
+  --color-surface: #182030;
+  --color-text: #e5e7eb;
+  --color-muted: #9aa3b2;
+  --color-muted-text: #a7afbd;
+  --color-border: #2b3547;
+  --color-row-hover: #1e2738;
+  --color-heading: #dbe3f4;
+  --color-btn-navy: #34497a;
+  --color-btn-navy-hover: #405890;
+  --color-navy: #111a30; /* sidebar and brand panel: a shade deeper than the page */
+  --color-navy-700: #1c2742;
+  --color-navy-600: #2a3756;
+
+  --color-green-tint: #12301f;
+  --color-amber-tint: #33270f;
+  --color-amber-tint-strong: #45340f;
+  --color-red-tint: #3b1a1c;
+  --color-orange-tint: #3a2410;
+  --color-navy-tint: #243049;
+  --color-amber-text: #f2c063;
+  --color-green-text: #6fd39a;
+  --color-red-text: #f28b8b;
+  --color-orange-text: #ffab66;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-modal: 0 24px 48px rgba(0, 0, 0, 0.55);
 }

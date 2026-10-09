@@ -8,18 +8,20 @@
 }
 
 .live-map__canvas {
-  height: calc(100vh - 230px);
+  height: calc(100vh - 262px); /* top bar, legend bar and footnote */
   min-height: 460px;
   border-radius: var(--radius);
   border: 1px solid var(--color-border);
 }
 
+/* Legend: a header bar on the map card, padded like .card__header on the other pages. */
 .live-map__legend {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1) var(--space-3);
-  margin-bottom: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
   font-size: var(--text-sm);
 }
 
@@ -27,6 +29,45 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  white-space: nowrap;
+}
+
+/* Fixed slot for each legend symbol, so dots and the site ring line up with their labels. */
+.live-map__swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* The site symbol on the map is tiny (so it doesn't hide the geofence); show it larger here. */
+.live-map__swatch .ft-site {
+  width: 6px;
+  height: 6px;
+  border-width: 3px;
+}
+
+.live-map__count {
+  margin-left: var(--space-half);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-map__count::before {
+  content: '(';
+}
+
+.live-map__count::after {
+  content: ')';
+}
+
+.live-map__pending {
+  margin-left: auto;
+}
+
+.live-map__body {
+  padding: var(--space-2) var(--space-3) var(--space-1);
 }
 
 .live-map__note {
@@ -35,14 +76,6 @@
 
 .live-map__clock {
   font-variant-numeric: tabular-nums;
-}
-
-.live-map__hotspot-swatch {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 1px dashed var(--color-red);
-  background: rgba(211, 58, 58, 0.08);
 }
 
 /* Workers glide to each new simulated position instead of snapping (poll is every 1 s). */
@@ -134,11 +167,11 @@
 .ft-worker--transit {
   background: var(--color-amber);
 }
+/* Delayed in traffic: red. The hotspots themselves aren't drawn; the slowdown still applies. */
 .ft-worker--traffic {
-  background: var(--color-amber);
-  border-color: var(--color-orange);
+  background: var(--color-red);
   box-shadow:
-    0 0 0 3px rgba(255, 122, 0, 0.45),
+    0 0 0 3px rgba(211, 58, 58, 0.35),
     0 1px 3px rgba(20, 33, 61, 0.45);
 }
 .ft-worker--off {
@@ -175,6 +208,31 @@
 }
 
 .map-popup__delay {
-  color: var(--color-orange-600);
+  color: var(--color-red-text);
   font-weight: var(--weight-semibold);
+}
+
+/* Leaflet's own popups and controls are hard-coded white; give them the theme's surface. */
+.live-map .leaflet-popup-content-wrapper,
+.live-map .leaflet-popup-tip,
+.live-map .leaflet-bar a,
+.live-map .leaflet-control-attribution {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.live-map .leaflet-bar a {
+  border-bottom-color: var(--color-border);
+}
+
+.live-map .leaflet-control-attribution {
+  opacity: 0.85;
+}
+
+.live-map .leaflet-control-attribution a {
+  color: var(--color-heading);
+}
+
+.live-map .leaflet-container {
+  background: var(--color-bg);
 }

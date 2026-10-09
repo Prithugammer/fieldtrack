@@ -41,7 +41,7 @@ about a single field.
 ### POST /auth/login
 - **Role:** public
 - **Body:** `{ "email": "admin@fieldtrack.com", "password": "Admin123!" }`
-- **200:** `{ "token": "<jwt>", "user": { "user_id": 1, "full_name": "Sarah Mitchell", "email": "...", "role": "Admin", ... } }` — JWT claims include `user_id` and `role`.
+- **200:** `{ "token": "<jwt>", "user": { "user_id": 1, "full_name": "Sunita Sharma", "email": "...", "role": "Admin", ... } }` — JWT claims include `user_id` and `role`.
 - **Errors:** 400 (`email`/`password` missing), 401 invalid credentials, 403 account deactivated or Worker account.
 
 ### GET /auth/me
@@ -132,7 +132,7 @@ about a single field.
 - **Errors:**
   - 400 missing/invalid field; worker inactive or not a Worker (`field: "user_id"`)
   - 404 job or user not found
-  - **409 double-booking** — `{ "error": "Marcus Reyes is already assigned to 'Level 4 framing' at Kirtipur Campus Expansion on 2026-10-01. A worker can only be booked on one job per day.", "field": "user_id" }`
+  - **409 double-booking** — `{ "error": "Ramesh Karki is already assigned to 'Level 4 framing' at Kirtipur Campus Expansion on 2026-10-01. A worker can only be booked on one job per day.", "field": "user_id" }`
   - 409 worker already on this job's crew (`field: "user_id"`)
   - 409 crew full / job completed
 
@@ -149,7 +149,7 @@ Each time entry in a response looks like:
 
 ```json
 {
-  "entry_id": 21, "user_id": 12, "worker_name": "Ben Okafor", "trade": "Laborer",
+  "entry_id": 21, "user_id": 12, "worker_name": "Bishal Neupane", "trade": "Laborer",
   "job_id": 9, "job_title": "Level 4 drywall prep", "site_id": 1, "site_name": "Kirtipur Campus Expansion",
   "clock_in": "2026-10-01T07:00:00", "clock_out": "2026-10-01T11:30:00",
   "in_lat": 27.678046, "in_lng": 85.287895, "out_lat": 27.677956, "out_lng": 85.287895,
@@ -239,14 +239,17 @@ count toward hours, and **Rejected entries are excluded**.
 
 There is no mobile app yet, so worker positions are **simulated** (`backend/simulation.py`).
 Every response is computed from the server clock: nothing is written to the database and no
-background thread runs. Real time loops through a simulated **6:00–7:15 AM** commute window
+background thread runs. Real time loops through a simulated **6:00–6:45 AM** commute window
 every **5 real minutes**. Each worker assigned to a job today follows a fixed route for the
 day (seeded by user_id + date) from a landmark a few km away, through up to 2 landmark
-waypoints, to their job site; the whole route is at most 1.3x the straight-line distance. Near a traffic hotspot (Koteshwor, Kalanki, Chabahil, Gongabu)
-they move at that junction's `speed_multiplier`.
+waypoints, to their job site, along the real road network. Near a traffic hotspot (Koteshwor,
+Kalanki, Chabahil, Gongabu) they move at that junction's `speed_multiplier`. Departure times are
+chosen (seeded by the date) so that about five workers are on the road or on site at every
+moment, with the rest setting off during the window.
 
 ### GET /map/live
 - **Role:** Staff
+- **Query:** `route` (optional user_id) — also return that worker's remaining route as `path`
 - **200:**
 ```json
 {
@@ -257,7 +260,7 @@ they move at that junction's `speed_multiplier`.
       "radius_m": 200, "jobs_today": ["Level 4 framing"] }
   ],
   "workers": [
-    { "id": 6, "name": "Dana Whitfield", "trade": "Electrician", "status": "In transit",
+    { "id": 6, "name": "Sita Rai", "trade": "Electrician", "status": "In transit",
       "lat": 27.72041, "lng": 85.34712, "job_title": "Level 3 rough-in (electrical & plumbing)",
       "site_name": "Boudha Stupa Plaza Retrofit", "near_traffic": true, "hotspot": "Chabahil",
       "distance_remaining_m": 1240 }
@@ -267,14 +270,39 @@ they move at that junction's `speed_multiplier`.
 - `status` is `Not started` (assigned today, hasn't left yet: `lat`/`lng` are `null`), `In transit`,
   `On site` (within ~30 m of the site centre), or `Off duty` (no assignment today: a fixed point
   near a landmark, shown greyed out and never moving).
+- With `?route=<user_id>`, that worker (only) gets `"path": [[lat, lng], ...]` while `In transit`:
+  the rest of their route along the roads, from their current position to the site. The map
+  draws it as a white line when the worker is selected.
 - `cycle` increases each time the simulated window restarts. The UI uses it to reset markers
   instead of animating them back to their start points.
 
 ### GET /map/sim-clock
 - **Role:** Staff
-- **200:** `{ "sim_time": "6:42 AM", "sim_minutes": 402.5, "window_start": "6:00 AM", "window_end": "7:15 AM", "cycle_seconds": 300, "cycle": 5970324, "seconds_to_reset": 137.4 }`
+- **200:** `{ "sim_time": "6:42 AM", "sim_minutes": 402.5, "window_start": "6:00 AM", "window_end": "6:45 AM", "cycle_seconds": 300, "cycle": 5970324, "seconds_to_reset": 137.4 }`
 - `seconds_to_reset` = real seconds until the window restarts at 6:00 AM (drives the UI's "New cycle in" countdown).
 
 ### GET /map/bounds
 - **Role:** Staff
 - **200:** `{ "south": 27.6, "west": 85.2, "north": 27.8, "east": 85.45, "traffic_hotspots": [ { "name": "Koteshwor", "lat": 27.6775, "lng": 85.3485, "radius_m": 700, "speed_multiplier": 0.25 }, ... ] }`
+
+
+## Safety / emergency
+Escalation runs inside `GET /map/live` (each poll advances it). That response gains
+`workers[].safety` (`state`, `checkin`, `elapsed_s`, `window_remaining_s`, `incapacitated`, `stopped`,
+`on_break`, `break_zone`), `workers[].sim_status`, a worker `status` of `EMERGENCY`, `Post-incident` or
+`Stopped` when applicable, and a top-level `safety` block: `{ config, seed, privacy_note, alerts[], notifications[] }`.
+Each alert has `worker_id`, `worker_name`, `state`, `stage`, `level` (`warning`/`critical`/`info`),
+`elapsed_s`, `window_remaining_s`, `location { lat, lng, label }` and `nearest_coworker`.
+
+All routes: **Role:** Staff. Errors use the usual `{error, field}` shape (404 unknown worker, 409 wrong state).
+
+| Route | Purpose |
+|-------|---------|
+| `GET /safety/config` | Active mode, thresholds, break zones, seed |
+| `POST /safety/workers/{user_id}/accident` | Demo: worker stops and cannot reply (201) |
+| `POST /safety/workers/{user_id}/sos` | Worker SOS: straight to EMERGENCY (201) |
+| `POST /safety/workers/{user_id}/respond` | Worker replies "I'm OK" -> `{ok, cleared}` (409 if incapacitated) |
+| `POST /safety/workers/{user_id}/break` | Body `{ "on_break": true }` |
+| `POST /safety/workers/{user_id}/resolve` | Body `{ "outcome": "real_incident" \| "false_alarm", "note"?: str }` (409 unless in EMERGENCY) |
+| `POST /safety/workers/{user_id}/return-to-duty` | Post-incident -> NORMAL |
+| `GET /safety/audit` | Audit log, oldest first; `?worker_id=`, `?format=csv` or `json-file` for a download |

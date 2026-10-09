@@ -75,32 +75,53 @@ Routes are split into 100 m pieces. A piece whose midpoint lies inside a hotspot
 bunch up at junctions. While a worker is inside a hotspot the API reports
 `near_traffic: true` with the junction's name, which the UI shows as *Delayed near Chabahil*.
 
-## 5. The simulated clock: 6:00–7:15 AM every 5 minutes
+The hotspots are not drawn on the map — circles over the busiest junctions cluttered the view
+and drew the eye away from the workers. The slowdown still applies; it shows on the workers
+themselves, as a red *Delayed in traffic* marker.
 
-Real time is mapped onto a repeating window: `time.time() % 300` seconds → 6:00–7:15 AM.
+## 5. The simulated clock: 6:00–6:45 AM every 5 minutes
+
+Real time is mapped onto a repeating window: `time.time() % 300` seconds → 6:00–6:45 AM.
 
 *Why this window and not a full 6 AM–6 PM day:* each worker makes one 8–35 minute commute and
 then stays on site. Over a 12-hour simulated day, with six workers, someone would be moving only
 about 20 % of the time — the map would sit still for most of a demo. A 3-hour window still left
-up to 37 % of the time with nobody moving on some days. The 75-minute morning-dispatch window
-was measured over 120 different days with **zero minutes where nobody is moving and zero minutes
-where nobody is on site**.
+up to 37 % of the time with nobody moving on some days.
 
-Departures are staggered so commutes overlap: the first worker (in a per-day shuffled order)
-arrives just before 6:00, the second is part-way there, and each later worker leaves before the
-previous one arrives.
+The window was first 75 minutes (6:00–7:15) with departures evenly staggered, which kept someone
+moving at every minute but left up to four of six workers hidden as *Not started* early in each
+cycle — often only two or three workers were visible. The goal was then sharpened to **about five
+workers visibly working (on the road or on site) at every moment**. Measuring random departure
+plans showed that is out of reach in 75 minutes with one commute each (only about half of days
+managed five), but a **45-minute window reaches it on every one of 60 measured days**, still with
+zero minutes where nobody is moving and zero where nobody is on site. Markers also move more
+slowly and smoothly, since each 5-minute cycle covers less simulated time.
+
+**Departures are picked at random**, seeded by the date so a day replays identically:
+300 random plans (each worker leaving between an hour before the window and 25 minutes before
+it ends) are scored minute by minute, and the best kept. In order, a plan must have no minute
+with nobody moving or nobody on site; then as many workers working at every moment as
+possible, up to five; then someone setting off during the window, so a worker appears on the
+map mid-cycle; then as much time spent moving as possible. With six assigned, the result is
+five working at the start, the sixth showing up at a random moment, and two or three on the
+road on average.
 
 ## 6. Statuses
 
 | Status | When | On the map |
 |--------|------|------------|
 | Not started | Assigned today, simulated time is before their departure | Not drawn (counted in the legend) |
-| In transit | On the road; `near_traffic` when inside a hotspot | Amber dot; orange ring when delayed |
+| In transit | On the road; `near_traffic` when inside a hotspot | Amber dot; red dot when delayed in traffic |
 | On site | Arrived; a fixed spot within ~30 m of the site centre | Green dot inside the geofence |
 | Off duty | No assignment today | Grey dot at a fixed point near a landmark; never moves |
 
 ## 7. Front-end decisions
 
+- **Base map:** Stadia Maps *Alidade Smooth* (light) and *Alidade Smooth Dark*, following the
+  app theme. The standard OpenStreetMap tiles label Kathmandu in Nepali script; these show
+  English place names, are muted so the coloured markers stand out, and are served at 2× on
+  high-density screens. They are free without a key on `localhost`; a hosted deployment needs
+  a free Stadia account registered to its domain.
 - **Polling every second** with a CSS transform transition so markers glide rather than jump.
   The glide is a straight line, so the interval is kept short: one second covers about 100 m
   of road, and the marker stays on the road around bends. (At 4 s it cut corners by
@@ -112,6 +133,12 @@ previous one arrives.
   returns to the opening view — a fast drag can no longer throw the map out of the valley.
 - **Cycle restart:** old markers fade out while the new cycle fades in, and a *New cycle in m:ss*
   countdown with a thin progress bar shows when the restart is coming.
+- **Route on click:** clicking an in-transit worker opens their popup (job, **km left** to the
+  site) and draws the rest of their route as a **white line along the roads** to the site. While
+  the popup is open, each poll asks `GET /map/live?route=<id>`, which returns that worker's
+  remaining route as `path`, so the line shortens as they drive and disappears when they
+  arrive or the popup is closed. Only the selected worker's path is sent, keeping the
+  once-a-second poll small. The line has a thin dark edge so it reads on the light map too.
 - **Shared sites:** on-site workers at the same site fan out on a small ring around the site dot
   (in screen pixels, so they stay apart at every zoom; API coordinates are unchanged).
 

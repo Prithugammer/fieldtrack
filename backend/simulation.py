@@ -11,8 +11,10 @@ How it works:
     and follows the real road network (roads.py) the whole way, ending with a short walk
     from the nearest road onto the site.
   * Real time loops through a simulated morning dispatch window (SIM_DAY_START to
-    SIM_DAY_END) every CYCLE_SECONDS. Departures are staggered so commutes overlap: at any
-    moment of the window some workers are on the road and some have already arrived.
+    SIM_DAY_END) every CYCLE_SECONDS. Departure times are picked at random (seeded by the
+    date) so that throughout the window nearly every assigned worker is visibly working,
+    on the road or on site, while someone is always moving and someone is always on site;
+    the rest set off at random moments during the window.
     (A full 6 am-6 pm day with one commute each would leave the map frozen most of the time.)
   * Near a traffic hotspot a worker moves at the hotspot's speed_multiplier, so markers
     visibly bunch up at busy junctions.
@@ -32,12 +34,16 @@ from roads import road_path, snap
 
 CYCLE_SECONDS = 300  # one simulated window every 5 real minutes
 SIM_DAY_START = 6 * 60  # 6:00 AM, in minutes after midnight
-SIM_DAY_END = 7 * 60 + 15  # 7:15 AM (the morning commute; sized so someone is always moving)
+SIM_DAY_END = 6 * 60 + 45  # 6:45 AM (short enough that almost everyone is always working)
 PIECE_M = 100  # routes are split into pieces this long for the traffic check
 
 START_MIN_KM, START_MAX_KM = 2.5, 10.0
 MAX_ROUTE_RATIO = 1.3  # waypoints may stretch the line from start to site by at most 30%
 MAX_DETOUR = 1.3  # ...and the drive through them by at most 30% over the shortest drive
+PLAN_TRIES = 300  # random departure plans tried per day; the best one is kept
+WORKING_TARGET = 5  # aim for about this many workers visibly working at every moment
+EARLIEST_DEPARTURE = 60  # minutes before the window opens that a commute may start
+LATEST_DEPARTURE = 25  # ...and minutes before it closes that the last one may start
 
 
 def _dist(a, b):
@@ -133,12 +139,18 @@ def _build_route(user_id, day, site_lat, site_lng):
 
     # Split into short pieces; a piece whose midpoint is in a hotspot is slowed down.
     pieces = []
-    for a, b in zip(points, points[1:]):
+    for seg, (a, b) in enumerate(zip(points, points[1:])):
         n = max(1, math.ceil(_dist(a, b) / PIECE_M))
         for i in range(n):
             p, q = _lerp(a, b, i / n), _lerp(a, b, (i + 1) / n)
             pieces.append(
-                {"a": p, "b": q, "length_m": _dist(p, q), "hotspot": _hotspot_at(_lerp(p, q, 0.5))}
+                {
+                    "a": p,
+                    "b": q,
+                    "seg": seg,  # which stretch of `points` this piece lies on
+                    "length_m": _dist(p, q),
+                    "hotspot": _hotspot_at(_lerp(p, q, 0.5)),
+                }
             )
     total_m = sum(pc["length_m"] for pc in pieces) or 1.0
     for pc in pieces:
@@ -161,32 +173,61 @@ def _build_route(user_id, day, site_lat, site_lng):
     }
 
 
-def plan_departures(routes, day):
-    """Stagger departures so commutes overlap across the whole simulated window.
+def _working_counts(deps, durations, minute):
+    """(working, moving, on site) at `minute` for these departure times and trip lengths."""
+    working = moving = 0
+    for dep, dur in zip(deps, durations):
+        if dep <= minute:
+            working += 1
+            moving += minute < dep + dur
+    return working, moving, working - moving
 
-    The first worker (in a per-day shuffled order) arrives just before window start, the
-    second is part-way there, and each later worker leaves before the previous one
-    arrives, with the overlap sized so the last arrival lands at the end of the window.
+
+@lru_cache(maxsize=64)
+def _best_departures(day, durations):
+    """The best of PLAN_TRIES random departure plans for these trip lengths (seeded by day).
+
+    A plan is judged minute by minute over the window, in order:
+      1. minutes with nobody moving or nobody on site (fewest wins);
+      2. the fewest workers visibly working at any moment, up to WORKING_TARGET (most wins);
+      3. workers who set off during the window, so someone appears on the map mid-cycle
+         (up to however many are left over above WORKING_TARGET);
+      4. total time spent moving (most wins, so the map stays busy).
+    """
+    rng = random.Random(f"plan:{day.isoformat()}")
+    minutes = range(SIM_DAY_START, SIM_DAY_END)
+    best_score, best = None, None
+    for _ in range(PLAN_TRIES):
+        deps = tuple(
+            rng.uniform(SIM_DAY_START - EARLIEST_DEPARTURE, SIM_DAY_END - LATEST_DEPARTURE)
+            for _ in durations
+        )
+        counts = [_working_counts(deps, durations, m) for m in minutes]
+        late = sum(1 for dep in deps if dep > SIM_DAY_START)
+        score = (
+            -sum(1 for _, moving, on_site in counts if not moving or not on_site),
+            min(WORKING_TARGET, min(working for working, _, _ in counts)),
+            min(late, max(0, len(durations) - WORKING_TARGET)),
+            sum(moving for _, moving, _ in counts),
+        )
+        if best_score is None or score > best_score:
+            best_score, best = score, deps
+    return best
+
+
+def plan_departures(routes, day):
+    """Give every route a departure time so the map is always busy.
+
+    Most workers have already left (some arrived) when the window opens, and the rest set
+    off at random moments during it, so nearly everyone assigned is visibly working at any
+    time while someone is always on the road and someone always on site.
     """
     order = sorted(routes, key=lambda r: r["user_id"])
-    random.Random(f"order:{day.isoformat()}").shuffle(order)
     if not order:
         return order
-    if len(order) == 1:
-        order[0]["departure"] = SIM_DAY_START
-        return order
-
-    d = [r["duration_minutes"] for r in order]
-    order[0]["departure"] = SIM_DAY_START - d[0] - 2  # already on site when the window opens
-    order[1]["departure"] = SIM_DAY_START - 0.3 * d[1]
-    if len(order) == 2:
-        return order
-    # `step` = fraction of a trip that passes before the next worker leaves (< 1 = overlap).
-    # Solve dep[1] + step * sum(d[1:-1]) + d[-1] = SIM_DAY_END, then clamp so trips overlap.
-    span = SIM_DAY_END - order[1]["departure"] - d[-1]
-    step = min(0.9, max(0.2, span / sum(d[1:-1])))
-    for k in range(2, len(order)):
-        order[k]["departure"] = order[k - 1]["departure"] + step * d[k - 1]
+    durations = tuple(round(r["duration_minutes"], 3) for r in order)
+    for route, dep in zip(order, _best_departures(day, durations)):
+        route["departure"] = dep
     return order
 
 
@@ -212,10 +253,12 @@ def format_clock(minutes):
     return f"{(h - 1) % 12 + 1}:{m:02d} {'AM' if h < 12 else 'PM'}"
 
 
-def get_worker_position(worker, route, sim_clock_minutes):
+def get_worker_position(worker, route, sim_clock_minutes, with_path=False):
     """Where `worker` is at `sim_clock_minutes` on their `route`.
 
     Returns a dict with status "Not started" (no position), "In transit" or "On site".
+    With `with_path`, an in-transit worker also gets "path": the rest of their route from
+    where they are now to the site, as [[lat, lng], ...], for drawing the line they will follow.
     """
     base = {
         "user_id": worker.user_id,
@@ -237,6 +280,10 @@ def get_worker_position(worker, route, sim_clock_minutes):
             f = min(1.0, elapsed / pc["minutes"]) if pc["minutes"] else 1.0
             lat, lng = _lerp(pc["a"], pc["b"], f)
             remaining = route["length_m"] - travelled - pc["length_m"] * f
+            path = {}
+            if with_path:
+                ahead = [(lat, lng)] + route["points"][pc["seg"] + 1 :]
+                path = {"path": [[round(a, 5), round(b, 5)] for a, b in ahead]}
             return {
                 **base,
                 "status": "In transit",
@@ -245,6 +292,7 @@ def get_worker_position(worker, route, sim_clock_minutes):
                 "near_traffic": pc["hotspot"] is not None,
                 "hotspot": pc["hotspot"],
                 "distance_remaining_m": round(max(0.0, remaining)),
+                **path,
             }
         elapsed -= pc["minutes"]
         travelled += pc["length_m"]
@@ -256,12 +304,14 @@ def off_duty_spot(user_id, day):
     return random_point_near(*LANDMARKS[rng.choice(sorted(LANDMARKS))], 0.5, rng)
 
 
-def get_live_map_state(sites, assignments, workers, day, now=None):
+def get_live_map_state(sites, assignments, workers, day, now=None, path_for=None):
     """Compute the whole map from plain inputs (no queries, no writes).
 
     sites:        JobSite rows
     assignments:  today's Assignment rows (with .job and .job.site)
     workers:      active Worker rows
+    path_for:     user_id of a worker whose remaining route to include (the one selected on
+                  the map), so the route is only sent while someone is looking at it
     """
     minutes, cycle = sim_clock(now)
     by_user = {a.user_id: a for a in assignments}
@@ -291,7 +341,7 @@ def get_live_map_state(sites, assignments, workers, day, now=None):
                 }
             )
             continue
-        pos = get_worker_position(w, routes[w.user_id], minutes)
+        pos = get_worker_position(w, routes[w.user_id], minutes, with_path=w.user_id == path_for)
         pos.pop("user_id")
         out.append({**info, **pos, "job_title": a.job.title, "site_name": a.job.site.site_name})
 

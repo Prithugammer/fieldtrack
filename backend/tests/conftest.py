@@ -38,8 +38,8 @@ def _load_fixture_data():
     admin = staff("Test Admin", "admin@test.com", "Admin")
     dispatcher = staff("Test Dispatcher", "dispatch@test.com", "Dispatcher")
     supervisor = staff("Test Supervisor", "super@test.com", "Supervisor")
-    w1 = User(full_name="Marcus Reyes", email="marcus@test.com", role="Worker", trade="Carpenter")
-    w2 = User(full_name="Ben Okafor", email="ben@test.com", role="Worker", trade="Laborer")
+    w1 = User(full_name="Ramesh Karki", email="marcus@test.com", role="Worker", trade="Carpenter")
+    w2 = User(full_name="Bishal Neupane", email="ben@test.com", role="Worker", trade="Laborer")
     site = JobSite(
         site_name="Riverside Apartments - Phase 2",
         address="720 Queen St E, Toronto",
@@ -75,7 +75,7 @@ def _load_fixture_data():
     )
     db.session.add_all([job_a, job_b])
     db.session.flush()
-    # Marcus is assigned to job A on DAY. Ben is not assigned to anything yet.
+    # Ramesh is assigned to job A on DAY. Bishal is not assigned to anything yet.
     db.session.add(Assignment(job=job_a, worker=w1, work_date=DAY))
     db.session.commit()
 

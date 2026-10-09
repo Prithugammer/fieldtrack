@@ -30,7 +30,7 @@ h3 {
 }
 
 a {
-  color: var(--color-navy);
+  color: var(--color-heading);
 }
 
 button,
@@ -173,7 +173,7 @@ textarea {
   justify-content: space-between;
   gap: var(--space-2);
   padding: 0 var(--space-4);
-  background: var(--color-white);
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -218,7 +218,7 @@ textarea {
 /* ---------- Cards ---------- */
 
 .card {
-  background: var(--color-white);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
@@ -269,7 +269,7 @@ textarea {
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
-  background: var(--kpi-accent, var(--color-navy));
+  background: var(--kpi-accent, var(--color-heading));
 }
 
 .kpi__label {
@@ -302,7 +302,7 @@ textarea {
   --kpi-accent: var(--color-amber);
 }
 .kpi--navy {
-  --kpi-accent: var(--color-navy);
+  --kpi-accent: var(--color-heading);
 }
 
 /* ---------- Layout helpers ---------- */
@@ -389,7 +389,7 @@ textarea {
 }
 
 .btn--secondary {
-  background: var(--color-white);
+  background: var(--color-surface);
   border-color: var(--color-border);
   color: var(--color-text);
 }
@@ -399,12 +399,12 @@ textarea {
 }
 
 .btn--navy {
-  background: var(--color-navy);
+  background: var(--color-btn-navy);
   color: var(--color-white);
 }
 
 .btn--navy:hover:not(:disabled) {
-  background: var(--color-navy-700);
+  background: var(--color-btn-navy-hover);
 }
 
 .btn--success {
@@ -419,7 +419,7 @@ textarea {
 
 .btn--ghost {
   background: transparent;
-  color: var(--color-navy);
+  color: var(--color-heading);
 }
 
 .btn--ghost:hover:not(:disabled) {
@@ -430,6 +430,12 @@ textarea {
   height: 32px;
   padding: 0 var(--space-1);
   font-size: var(--text-xs);
+}
+
+/* Square icon-only button (e.g. the theme toggle) */
+.btn--icon {
+  width: 32px;
+  padding: 0;
 }
 
 .btn--block {
@@ -467,7 +473,7 @@ textarea {
 }
 
 .field__required {
-  color: var(--color-red);
+  color: var(--color-red-text);
   margin-left: 2px;
 }
 
@@ -481,7 +487,7 @@ textarea {
   align-items: flex-start;
   gap: var(--space-half);
   font-size: var(--text-xs);
-  color: var(--color-red);
+  color: var(--color-red-text);
   font-weight: var(--weight-medium);
 }
 
@@ -491,7 +497,7 @@ textarea {
   padding: 0 var(--space-1) 0 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  background: var(--color-white);
+  background: var(--color-surface);
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
@@ -545,13 +551,13 @@ textarea.input {
 .alert--error {
   background: var(--color-red-tint);
   border-color: rgba(211, 58, 58, 0.3);
-  color: var(--color-red);
+  color: var(--color-red-text);
 }
 
 .alert--success {
   background: var(--color-green-tint);
   border-color: rgba(27, 158, 75, 0.3);
-  color: #146e35;
+  color: var(--color-green-text);
 }
 
 .alert--warning {
@@ -610,7 +616,7 @@ textarea.input {
 }
 .chip--navy {
   background: var(--color-navy-tint);
-  color: var(--color-navy);
+  color: var(--color-heading);
 }
 .chip--muted {
   background: var(--color-bg);
@@ -675,7 +681,7 @@ textarea.input {
 }
 
 .table tr.row-flagged:hover td {
-  background: #fdecc8;
+  background: var(--color-amber-tint-strong);
 }
 
 .cell-title {
@@ -787,15 +793,15 @@ textarea.input {
 }
 .list__icon--red {
   background: var(--color-red-tint);
-  color: var(--color-red);
+  color: var(--color-red-text);
 }
 .list__icon--navy {
   background: var(--color-navy-tint);
-  color: var(--color-navy);
+  color: var(--color-heading);
 }
 
 .list__link {
-  color: var(--color-navy);
+  color: var(--color-heading);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   text-decoration: none;
@@ -824,7 +830,7 @@ textarea.input {
   max-height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
-  background: var(--color-white);
+  background: var(--color-surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-modal);
   animation: slide-up 0.18s ease-out;
@@ -898,7 +904,7 @@ textarea.input {
   border-radius: var(--radius);
   background: var(--color-navy-tint);
   font-size: var(--text-xs);
-  color: var(--color-navy);
+  color: var(--color-heading);
 }
 
 .info-box strong {
@@ -945,7 +951,7 @@ textarea.input {
 }
 
 .segmented button.is-active {
-  background: var(--color-white);
+  background: var(--color-surface);
   color: var(--color-text);
   box-shadow: 0 1px 2px rgba(20, 33, 61, 0.1);
 }
@@ -1037,10 +1043,17 @@ textarea.input {
 }
 
 .login__formside {
+  position: relative;
   display: grid;
   place-items: center;
   padding: var(--space-6) var(--space-3);
-  background: var(--color-white);
+  background: var(--color-surface);
+}
+
+.login__theme {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
 }
 
 .login__form {
@@ -1071,7 +1084,7 @@ textarea.input {
   padding: var(--space-1) 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  background: var(--color-white);
+  background: var(--color-surface);
   cursor: pointer;
 }
 

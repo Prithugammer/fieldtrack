@@ -85,6 +85,35 @@ def test_always_someone_moving_and_someone_on_site():
             minute += 1
 
 
+def test_about_five_workers_always_working_and_one_shows_up_mid_cycle():
+    # With six assigned, at least WORKING_TARGET are on the road or on site at every minute,
+    # and the rest set off during the window, so someone appears on the map mid-cycle.
+    for k in range(30):
+        routes = plan(DAY + timedelta(days=k))
+        for minute in range(sim.SIM_DAY_START, sim.SIM_DAY_END):
+            working = [p for p in positions(routes, minute) if p["status"] != "Not started"]
+            assert len(working) >= sim.WORKING_TARGET, (k, minute)
+        assert any(r["departure"] > sim.SIM_DAY_START for r in routes.values()), k
+
+
+def test_selected_worker_gets_the_rest_of_their_route():
+    # The line drawn for a selected worker starts where they are and ends at their site,
+    # and is as long as the distance they have left.
+    routes = plan()
+    r = next(iter(routes.values()))
+    worker = SimpleNamespace(user_id=r["user_id"])
+    for f in (0.1, 0.5, 0.9):
+        p = sim.get_worker_position(worker, r, r["departure"] + f * r["duration_minutes"], True)
+        assert p["status"] == "In transit"
+        path = p["path"]
+        assert haversine(*path[0], p["lat"], p["lng"]) < 2  # starts at the worker
+        assert haversine(*path[-1], *r["points"][-1]) < 2  # ends at their site
+        length = sum(haversine(*a, *b) for a, b in zip(path, path[1:]))
+        assert abs(length - p["distance_remaining_m"]) < 25
+    # Without the flag (every other worker on the map), no path is sent.
+    assert "path" not in sim.get_worker_position(worker, r, r["departure"] + 1)
+
+
 def test_positions_stay_in_the_valley_and_finish_at_the_site():
     routes = plan()
     b = KATHMANDU_VALLEY_BOUNDS
@@ -136,3 +165,7 @@ def test_live_map_endpoint_is_read_only(client, dispatcher_headers):
     for path in ("/api/map/sim-clock", "/api/map/bounds"):
         assert client.get(path, headers=dispatcher_headers).status_code == 200
     assert client.get("/api/map/live").status_code == 401
+    # ?route=<id> only ever adds a path to that one worker.
+    some_id = data["workers"][0]["id"]
+    routed = client.get(f"/api/map/live?route={some_id}", headers=dispatcher_headers).get_json()
+    assert all("path" not in w for w in routed["workers"] if w["id"] != some_id)

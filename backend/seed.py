@@ -54,15 +54,15 @@ def seed():
         u.set_password(password)
         return u
 
-    admin = staff("Sarah Mitchell", "admin@fieldtrack.com", "Admin", "Admin123!", "416-555-0100")
+    admin = staff("Sunita Sharma", "admin@fieldtrack.com", "Admin", "Admin123!", "+977-9841-0100")
     disp1 = staff(
-        "Kevin Lam", "dispatch@fieldtrack.com", "Dispatcher", "Dispatch123!", "416-555-0110"
+        "Rajesh Shrestha", "dispatch@fieldtrack.com", "Dispatcher", "Dispatch123!", "+977-9841-0110"
     )
     disp2 = staff(
-        "Rosa Delgado", "dispatch2@fieldtrack.com", "Dispatcher", "Dispatch123!", "416-555-0111"
+        "Anita Gurung", "dispatch2@fieldtrack.com", "Dispatcher", "Dispatch123!", "+977-9841-0111"
     )
     sup = staff(
-        "Greg Hanson", "supervisor@fieldtrack.com", "Supervisor", "Super123!", "416-555-0120"
+        "Bikash Thapa", "supervisor@fieldtrack.com", "Supervisor", "Super123!", "+977-9841-0120"
     )
 
     def worker(name, email, trade, phone):
@@ -70,19 +70,19 @@ def seed():
             full_name=name, email=email, role="Worker", trade=trade, phone=phone, is_active=True
         )
 
-    marcus = worker("Marcus Reyes", "marcus.reyes@fieldtrack.com", "Carpenter", "647-555-0131")
-    dana = worker("Dana Whitfield", "dana.whitfield@fieldtrack.com", "Electrician", "647-555-0132")
-    luis = worker("Luis Ortega", "luis.ortega@fieldtrack.com", "Concrete Finisher", "647-555-0133")
-    jamal = worker(
-        "Jamal Carter", "jamal.carter@fieldtrack.com", "Equipment Operator", "647-555-0134"
+    ramesh = worker("Ramesh Karki", "ramesh.karki@fieldtrack.com", "Carpenter", "+977-9851-0131")
+    sita = worker("Sita Rai", "sita.rai@fieldtrack.com", "Electrician", "+977-9851-0132")
+    dipak = worker("Dipak Tamang", "dipak.tamang@fieldtrack.com", "Concrete Finisher", "+977-9851-0133")
+    suresh = worker(
+        "Suresh Magar", "suresh.magar@fieldtrack.com", "Equipment Operator", "+977-9851-0134"
     )
-    priya = worker("Priya Nair", "priya.nair@fieldtrack.com", "Laborer", "647-555-0135")
-    tom = worker("Tom Kowalski", "tom.kowalski@fieldtrack.com", "Ironworker", "647-555-0136")
-    ashley = worker("Ashley Brooks", "ashley.brooks@fieldtrack.com", "Plumber", "647-555-0137")
-    ben = worker("Ben Okafor", "ben.okafor@fieldtrack.com", "Laborer", "647-555-0138")
+    pooja = worker("Pooja Basnet", "pooja.basnet@fieldtrack.com", "Laborer", "+977-9851-0135")
+    santosh = worker("Santosh Khadka", "santosh.khadka@fieldtrack.com", "Ironworker", "+977-9851-0136")
+    kamala = worker("Kamala Poudel", "kamala.poudel@fieldtrack.com", "Plumber", "+977-9851-0137")
+    bishal = worker("Bishal Neupane", "bishal.neupane@fieldtrack.com", "Laborer", "+977-9851-0138")
 
     db.session.add_all(
-        [admin, disp1, disp2, sup, marcus, dana, luis, jamal, priya, tom, ashley, ben]
+        [admin, disp1, disp2, sup, ramesh, sita, dipak, suresh, pooja, santosh, kamala, bishal]
     )
 
     # ---- Job sites ----------------------------------------------------------------------
@@ -206,17 +206,17 @@ def seed():
     db.session.flush()
 
     # ---- Assignments ----------------------------------------------------------------------
-    # Yesterday: all 8 workers.  Today: 6 workers (Jamal and Ben worked the night shift,
+    # Yesterday: all 8 workers.  Today: 6 workers (Suresh and Bishal worked the night shift,
     # so they are the "unassigned workers" on the dashboard).  Tomorrow: 3 so far.
     crew_plan = [
-        (j1, [marcus, priya, tom]),
-        (j2, [jamal, ben]),
-        (j3, [dana, ashley, luis]),
-        (j4, [marcus, priya]),  # 2 of 3 -> shows as understaffed
-        (j5, [luis, tom]),  # 2 of 3 -> shows as understaffed
-        (j6, [dana, ashley]),
-        (j7, [jamal, ben]),
-        (j8, [luis]),
+        (j1, [ramesh, pooja, santosh]),
+        (j2, [suresh, bishal]),
+        (j3, [sita, kamala, dipak]),
+        (j4, [ramesh, pooja]),  # 2 of 3 -> shows as understaffed
+        (j5, [dipak, santosh]),  # 2 of 3 -> shows as understaffed
+        (j6, [sita, kamala]),
+        (j7, [suresh, bishal]),
+        (j8, [dipak]),
     ]
     for j, crew in crew_plan:
         for w in crew:
@@ -252,31 +252,31 @@ def seed():
     ok = "Verified against foreman's daily log"
     y = yesterday
     # Yesterday — Kirtipur (split shifts around lunch)
-    entry(marcus, j1, at(y, 7), at(y, 11, 30), (25, -10), (30, 5), "Approved", ok)
-    entry(marcus, j1, at(y, 12), at(y, 15, 30), (20, 0), (35, 15), "Approved", ok)
-    entry(priya, j1, at(y, 7, 5), at(y, 11, 30), (-40, 20), (-35, 10))
-    entry(priya, j1, at(y, 12), at(y, 15, 35), (-30, 15), (-45, 0))
-    entry(tom, j1, at(y, 6, 55), at(y, 11, 30), (60, 40), (55, 30))
-    entry(tom, j1, at(y, 12, 5), at(y, 15, 40), (50, 35), (350, 0))  # FLAGGED clock-out 350 m
+    entry(ramesh, j1, at(y, 7), at(y, 11, 30), (25, -10), (30, 5), "Approved", ok)
+    entry(ramesh, j1, at(y, 12), at(y, 15, 30), (20, 0), (35, 15), "Approved", ok)
+    entry(pooja, j1, at(y, 7, 5), at(y, 11, 30), (-40, 20), (-35, 10))
+    entry(pooja, j1, at(y, 12), at(y, 15, 35), (-30, 15), (-45, 0))
+    entry(santosh, j1, at(y, 6, 55), at(y, 11, 30), (60, 40), (55, 30))
+    entry(santosh, j1, at(y, 12, 5), at(y, 15, 40), (50, 35), (350, 0))  # FLAGGED clock-out 350 m
     # Yesterday — Boudha
-    entry(dana, j3, at(y, 6, 30), at(y, 11), (10, 10), (15, -5), "Approved", ok)
-    entry(dana, j3, at(y, 11, 30), at(y, 15), (5, 20), (10, 0), "Approved", ok)
-    entry(ashley, j3, at(y, 6, 30), at(y, 11), (-20, 30), (-25, 20))
-    entry(ashley, j3, at(y, 11, 30), at(y, 15, 5), (-15, 25), (-20, 10))
-    entry(luis, j3, at(y, 7), at(y, 11, 30), (40, -40), (35, -30))
-    entry(luis, j3, at(y, 12), at(y, 15, 30), (30, -35), (45, -25))
+    entry(sita, j3, at(y, 6, 30), at(y, 11), (10, 10), (15, -5), "Approved", ok)
+    entry(sita, j3, at(y, 11, 30), at(y, 15), (5, 20), (10, 0), "Approved", ok)
+    entry(kamala, j3, at(y, 6, 30), at(y, 11), (-20, 30), (-25, 20))
+    entry(kamala, j3, at(y, 11, 30), at(y, 15, 5), (-15, 25), (-20, 10))
+    entry(dipak, j3, at(y, 7), at(y, 11, 30), (40, -40), (35, -30))
+    entry(dipak, j3, at(y, 12), at(y, 15, 30), (30, -35), (45, -25))
     # Yesterday night — Koteshwor culvert: 19:00 -> 03:30 today (crosses midnight = 8.5 h)
-    entry(jamal, j2, at(y, 19), at(today, 3, 30), (80, 120), (60, 100))
-    entry(ben, j2, at(y, 19, 10), at(today, 3, 30), (610, 0), (90, 110))  # FLAGGED clock-in 610 m
+    entry(suresh, j2, at(y, 19), at(today, 3, 30), (80, 120), (60, 100))
+    entry(bishal, j2, at(y, 19, 10), at(today, 3, 30), (610, 0), (90, 110))  # FLAGGED clock-in 610 m
 
     # Today — currently clocked in (no clock-out yet)
     t = today
-    entry(marcus, j4, at(t, 7), None, (25, 5))
-    entry(priya, j4, at(t, 7, 2), None, (-30, 10))
-    entry(luis, j5, at(t, 6, 45), None, (40, 60))
-    entry(tom, j5, at(t, 6, 50), None, (0, 420))  # FLAGGED clock-in 420 m
-    entry(dana, j6, at(t, 7), None, (10, 5))
-    entry(ashley, j6, at(t, 7, 5), None, (-15, 20))
+    entry(ramesh, j4, at(t, 7), None, (25, 5))
+    entry(pooja, j4, at(t, 7, 2), None, (-30, 10))
+    entry(dipak, j5, at(t, 6, 45), None, (40, 60))
+    entry(santosh, j5, at(t, 6, 50), None, (0, 420))  # FLAGGED clock-in 420 m
+    entry(sita, j6, at(t, 7), None, (10, 5))
+    entry(kamala, j6, at(t, 7, 5), None, (-15, 20))
 
     db.session.commit()
 

@@ -21,7 +21,7 @@ IDLE, WINDOW = CFG.idle_threshold_seconds, CFG.checkin_response_window_seconds
 def make_machine(config=CFG):
     audit = AuditLog(clock=lambda: 0)
     notifier = MockNotifier(config, clock=lambda: 0)
-    return SafetyMachine(WorkerRef(1, "Ben Okafor"), config, notifier, audit), notifier, audit
+    return SafetyMachine(WorkerRef(1, "Bishal Neupane"), config, notifier, audit), notifier, audit
 
 
 def events(audit):
@@ -410,8 +410,8 @@ def test_one_setting_switches_between_the_real_and_demo_presets():
 def fake_map(monkeypatch):
     """Pin the Live Map to a known state (the real one depends on the wall clock)."""
     state = fixed(
-        worker(5, "Marcus Reyes", "In transit", 27.700, 85.300),
-        worker(6, "Ben Okafor", "On site", 27.701, 85.301),
+        worker(5, "Ramesh Karki", "In transit", 27.700, 85.300),
+        worker(6, "Bishal Neupane", "On site", 27.701, 85.301),
     )
     monkeypatch.setattr("routes.map.compute_live_state", lambda path_for=None: state())
     monkeypatch.setattr("routes.safety.compute_live_state", lambda path_for=None: state())
@@ -453,7 +453,7 @@ def test_trigger_accident_then_resolve_over_http(
     cfg = quiet_safety.config
     t0 = quiet_safety.clock()
     done = t0 + cfg.idle_threshold_seconds + cfg.num_checkins * cfg.checkin_response_window_seconds
-    crew = live(worker(5, "Marcus Reyes", "In transit"), worker(6, "Ben Okafor"))
+    crew = live(worker(5, "Ramesh Karki", "In transit"), worker(6, "Bishal Neupane"))
     for t in range(int(t0) + 1, int(done) + 3):  # polled every second, as the dashboard does
         state = quiet_safety.process(crew, now=t)
     assert state["safety"]["alerts"][0]["state"] == EMERGENCY

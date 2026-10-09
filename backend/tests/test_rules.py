@@ -134,7 +134,7 @@ def test_hours_model_method():
 
 
 def test_double_booking_is_rejected_with_409(client, dispatcher_headers, ids):
-    # Marcus is already on job A on DAY; booking him on job B the same day must fail.
+    # Ramesh is already on job A on DAY; booking him on job B the same day must fail.
     res = client.post(
         "/api/assignments",
         headers=dispatcher_headers,

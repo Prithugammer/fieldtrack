@@ -1,6 +1,7 @@
 import { useAuth } from '../context/AuthContext'
 import { initials } from '../utils/format'
 import { IconLogout } from './Icons'
+import ThemeToggle from './ThemeToggle'
 
 /** Page header: title + subtitle on the left, page actions and the signed-in user on the right. */
 export default function TopBar({ title, subtitle, actions }) {
@@ -13,6 +14,7 @@ export default function TopBar({ title, subtitle, actions }) {
       </div>
       <div className="topbar__user">
         {actions}
+        <ThemeToggle />
         {user && (
           <>
             <div className="avatar" title={user.full_name}>

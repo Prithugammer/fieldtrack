@@ -4,6 +4,7 @@ import FormField from '../components/FormField'
 import { IconCheck } from '../components/Icons'
 import { BrandMark } from '../components/Sidebar'
 import { Alert } from '../components/States'
+import ThemeToggle from '../components/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
 import { errorState } from '../utils/format'
 
@@ -89,6 +90,9 @@ export default function Login() {
       </section>
 
       <section className="login__formside">
+        <div className="login__theme">
+          <ThemeToggle />
+        </div>
         <form className="login__form form" onSubmit={handleSubmit} noValidate>
           <div>
             <h2 className="login__title">Sign in</h2>

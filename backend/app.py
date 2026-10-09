@@ -18,9 +18,11 @@ from routes.dashboard import dashboard_bp
 from routes.jobs import jobs_bp
 from routes.map import map_bp
 from routes.reports import reports_bp
+from routes.safety import safety_bp
 from routes.sites import sites_bp
 from routes.time_entries import time_entries_bp
 from routes.users import users_bp
+from safety import SafetyConfig, SafetyService
 from validation import ApiError
 
 
@@ -45,8 +47,14 @@ def create_app(overrides=None):
         reports_bp,
         dashboard_bp,
         map_bp,
+        safety_bp,
     ):
         app.register_blueprint(bp)
+
+    # Safety escalation state lives in memory for the life of the app (tests pass SAFETY_CONFIG).
+    app.extensions["safety"] = SafetyService(
+        app.config.get("SAFETY_CONFIG") or SafetyConfig.from_env()
+    )
 
     _register_error_handlers(app)
 

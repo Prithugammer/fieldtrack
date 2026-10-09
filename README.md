@@ -26,6 +26,7 @@ Built for **PRG 100 — Systems Analysis & Design**: the analysis and design art
 | **Approvals** | Supervisors approve or reject completed entries with a mandatory reason; the approver is recorded as an audit trail. |
 | **Reports** | Hours by worker (approved vs pending) and by job for any date range, flagged entries, and CSV export. Hours are always computed from clock-in/out, never stored. |
 | **People** | Admins create, edit and deactivate staff and workers (deactivated rather than deleted, so history stays intact). |
+| **Light and dark mode** | A sun/moon button in the top bar (and on the sign-in page) switches theme. It follows the operating-system setting until you choose, then remembers the choice. The Live Map switches to a matching light or dark base map. |
 | **Live Map** | Job sites with geofence circles and worker markers that commute, slow down at real traffic junctions and arrive on site. Positions are simulated from the server clock — see [docs/live-map-design.md](docs/live-map-design.md). |
 
 Every validation error comes back as `{"error": "...", "field": "..."}` and is shown directly
@@ -39,7 +40,7 @@ flowchart LR
     API["Flask API<br/>blueprints per resource<br/>localhost:5000"]
     Rules["Business rules<br/>geofence.py · simulation.py"]
     DB[("SQLite<br/>6 tables")]
-    OSM["OpenStreetMap tiles"]
+    OSM["Stadia Maps tiles (OpenStreetMap data)"]
 
     Browser -- "JSON over HTTP + JWT" --> API
     API --> Rules
@@ -76,7 +77,7 @@ instant.
 | Layer | Technology |
 |-------|------------|
 | Backend | Python 3.10+, Flask 3, Flask-SQLAlchemy, Flask-JWT-Extended, Flask-CORS, bcrypt, python-dotenv, SQLite |
-| Frontend | React 19, Vite, react-router-dom, Leaflet + react-leaflet, plain CSS with design tokens |
+| Frontend | React 19, Vite, react-router-dom, Leaflet + react-leaflet with Stadia Maps tiles (English labels), plain CSS with design tokens (light and dark themes) |
 | Quality | pytest (54 tests), black, Prettier |
 | Docs | Markdown + Mermaid diagrams in `docs/` |
 
@@ -131,7 +132,7 @@ has click-to-fill buttons).
 | Dispatcher | `dispatch2@fieldtrack.com` | `Dispatch123!` |
 | Supervisor | `supervisor@fieldtrack.com` | `Super123!` |
 
-Workers (e.g. Marcus Reyes, Ben Okafor) are records only and cannot sign in.
+Workers (e.g. Ramesh Karki, Bishal Neupane) are records only and cannot sign in.
 
 ### Configuration
 
@@ -175,6 +176,78 @@ moving, traffic slowdown, read-only endpoint).
 `python seed.py` (from `backend/`, with the virtualenv active) wipes and reloads everything.
 Seed dates are **relative to today** — jobs run yesterday, today and tomorrow — so re-run it on
 the day you present.
+
+## Safety / emergency (man-down) alerts
+
+The Live Map also watches every simulated worker for trouble. A worker who is **on shift** but
+**has not moved** for the idle threshold gets a safety check-in; unanswered check-ins escalate to
+an EMERGENCY that only a supervisor can close. Everything is simulated: nobody is called or
+texted (the notifier is a mock, see below).
+
+```
+NORMAL -> CHECKIN_1 -> CHECKIN_2 -> CHECKIN_3 -> EMERGENCY -> (supervisor resolves)
+            ^ back to NORMAL if the worker replies "I'm OK" or starts moving
+```
+
+- **Check-in 1** messages the worker *and* raises a warning for the supervisor; check-ins 2 and 3
+  message the worker again. Each has its own response window.
+- **EMERGENCY** sets the worker's status to `EMERGENCY` (not offline: the marker stays, pulses red
+  and keeps showing the last known location), places a **mock** call to emergency services, alerts
+  the supervisor at critical level and locks until a supervisor picks *Resolved - real incident* or
+  *Resolved - false alarm* (optional note).
+  A false alarm returns the worker to NORMAL; a real incident marks them **Post-incident** (kept
+  visible, not re-escalated) until a supervisor presses *Return to duty*.
+- **Never flagged:** workers who are off shift (not started / off duty), marked *on break*, or standing
+  inside a configured break zone.
+- **Accidents:** each moving worker rolls `accident_probability` (1%) once per
+  `accident_roll_interval_seconds` (one simulated hour = 400 s), not every tick. A victim stops
+  moving and never answers, so the escalation above follows. Fine-but-idle workers (for instance
+  those standing on site) answer with probability `auto_respond_chance`, so false alarms get cleared.
+- **SOS:** skips straight to EMERGENCY.
+- **Audit log:** every event (idle detected, each check-in, replies, accident, SOS, mock call,
+  resolution and note) is timestamped; view it in the *Audit log* tab or export CSV/JSON.
+- **Privacy:** location data is used only for safety alerts, and the reason for any flag is visible
+  to the worker (the check-in message states it). The panel repeats this note.
+
+### Configuration
+
+One preset switch, `SAFETY_MODE` (environment variable or `backend/.env`):
+
+| Setting (`SAFETY_<NAME>` overrides any one) | `real` | `demo` |
+|---|---|---|
+| `IDLE_THRESHOLD_SECONDS` | 600 | 15 |
+| `CHECKIN_RESPONSE_WINDOW_SECONDS` | 120 | 5 |
+| `NUM_CHECKINS` | 3 | 3 |
+| `ACCIDENT_PROBABILITY` | 0.01 | 0.01 |
+| `ACCIDENT_ROLL_INTERVAL_SECONDS` | 400 (one simulated hour) | 400 |
+| `AUTO_RESPOND_CHANCE` | 0.85 | 0.85 |
+| `IDLE_DISTANCE_TOLERANCE_M` | 15 | 15 |
+| `MAX_POLL_GAP_SECONDS` | 10 | 10 |
+
+`SAFETY_SEED=<integer>` makes accidents and auto-replies reproducible (otherwise a random seed is
+used and reported in `GET /api/safety/config`). Break zones (circles or rectangles) are defined in
+`backend/safety/config.py` (`DEFAULT_BREAK_ZONES`). All durations are real seconds.
+
+### Run the demo
+
+```
+cd backend
+SAFETY_MODE=demo SAFETY_SEED=1 python app.py          # PowerShell: $env:SAFETY_MODE="demo"; python app.py
+cd ../frontend && npm run dev                          # open Live Map; keep it open (it drives the clock)
+```
+
+1. Sign in and open **Live Map**; the Safety panel above the map shows *All clear* and the mode.
+2. Click a worker marker and press **Trigger accident** (or **SOS**). In demo mode: 15 s later
+   check-in 1 (warning + message), then check-ins 2 and 3 five seconds apart, then EMERGENCY with a
+   mock call. Watch the *Messages* and *Audit log* tabs.
+3. In the *Alerts* tab, see the location, elapsed time and nearest available co-worker, then press
+   **Resolved - false alarm** or **real incident**.
+4. To see a false alarm clear: leave workers standing on site; they are idle, get a check-in and
+   usually answer "I'm OK" automatically. In the *Messages* tab you can also answer as the worker.
+
+Replacing the mock: subclass `Notifier` in `backend/safety/notifier.py` (for example a Twilio SMS and
+voice adapter) and pass it to `SafetyService(notifier=...)`; nothing else changes. No new
+dependencies were added.
 
 ## Project structure
 
@@ -241,6 +314,8 @@ pieces of it.
 
 - **No worker mobile app.** Workers are records; supervisors enter time on their behalf.
   A mobile app for self clock-in is the natural next component.
+- **Safety monitoring is simulated and in-memory.** Escalation state and the audit log live in the
+  server process (lost on restart) and advance only while a dashboard is polling the Live Map.
 - **No real GPS feed.** Coordinates are entered (or filled by "simulate phone GPS" buttons), and
   the Live Map simulates positions. The API and map are shaped so a real feed could replace the
   simulation without changing the UI.
@@ -250,4 +325,7 @@ pieces of it.
   machine. Production would use a managed database, a WSGI server behind HTTPS, a built
   frontend, and a real `SECRET_KEY` (already supported via environment variables).
 - **No password reset, notifications or multi-company support.**
-- **Map routes are straight segments between landmarks**, not snapped to the road network.
+- **Simplified map routing.** Simulated workers follow the real main roads, but routing ignores
+  one-way streets and road class.
+- **Map tiles need a key once hosted.** Stadia Maps serves the base map without a key on
+  `localhost` only; a deployment needs a free Stadia account registered to its domain.
