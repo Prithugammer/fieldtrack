@@ -8,6 +8,7 @@ import { useApi } from '../api/useApi'
 import SafetyPanel from '../components/SafetyPanel'
 import TopBar from '../components/TopBar'
 import { Alert, EmptyState, ErrorState, LoadingState } from '../components/States'
+import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 
 // Positions are SIMULATED on the server (backend/simulation.py) — there is no mobile app
@@ -170,44 +171,46 @@ function SafetyControls({ worker: w, onAction }) {
       )}
       {s.on_break && <div className="muted">On break</div>}
       {s.break_zone && <div className="muted">In rest area: {s.break_zone}</div>}
-      <div className="map-popup__actions">
-        {s.checkin > 0 && !s.incapacitated && (
-          <button
-            type="button"
-            className="btn btn--success btn--sm"
-            onClick={() => onAction(`workers/${w.id}/respond`)}
-          >
-            I&apos;m OK
-          </button>
-        )}
-        {(onShift || s.stopped) && s.state !== 'EMERGENCY' && !s.stopped && (
-          <button
-            type="button"
-            className="btn btn--danger btn--sm"
-            onClick={() => onAction(`workers/${w.id}/accident`)}
-          >
-            Trigger accident
-          </button>
-        )}
-        {(onShift || s.stopped) && s.state !== 'EMERGENCY' && (
-          <button
-            type="button"
-            className="btn btn--danger btn--sm"
-            onClick={() => onAction(`workers/${w.id}/sos`)}
-          >
-            SOS
-          </button>
-        )}
-        {onShift && !s.stopped && (
-          <button
-            type="button"
-            className="btn btn--secondary btn--sm"
-            onClick={() => onAction(`workers/${w.id}/break`, { on_break: !s.on_break })}
-          >
-            {s.on_break ? 'End break' : 'Start break'}
-          </button>
-        )}
-      </div>
+      {onAction && (
+        <div className="map-popup__actions">
+          {s.checkin > 0 && !s.incapacitated && (
+            <button
+              type="button"
+              className="btn btn--success btn--sm"
+              onClick={() => onAction(`workers/${w.id}/respond`)}
+            >
+              I&apos;m OK
+            </button>
+          )}
+          {(onShift || s.stopped) && s.state !== 'EMERGENCY' && !s.stopped && (
+            <button
+              type="button"
+              className="btn btn--danger btn--sm"
+              onClick={() => onAction(`workers/${w.id}/accident`)}
+            >
+              Trigger accident
+            </button>
+          )}
+          {(onShift || s.stopped) && s.state !== 'EMERGENCY' && (
+            <button
+              type="button"
+              className="btn btn--danger btn--sm"
+              onClick={() => onAction(`workers/${w.id}/sos`)}
+            >
+              SOS
+            </button>
+          )}
+          {onShift && !s.stopped && (
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={() => onAction(`workers/${w.id}/break`, { on_break: !s.on_break })}
+            >
+              {s.on_break ? 'End break' : 'Start break'}
+            </button>
+          )}
+        </div>
+      )}
     </>
   )
 }
@@ -233,11 +236,15 @@ export default function LiveMap() {
   const fadeTimer = useRef(null)
   const mapRef = useRef(null)
   const [actionError, setActionError] = useState(null)
+  // Only Supervisors and Admins may change safety state. Hiding the controls is a convenience;
+  // the server enforces the same rule (403).
+  const { hasRole } = useAuth()
+  const canControl = hasRole('Supervisor', 'Admin')
 
   const poll = useCallback(async () => {
     try {
       const [state, sim] = await Promise.all([
-        api('/map/live', { params: { route: selectedRef.current } }),
+        api('/safety/tick', { method: 'POST', params: { route: selectedRef.current } }),
         api('/map/sim-clock'),
       ])
       const prev = prevLive.current
@@ -430,7 +437,7 @@ export default function LiveMap() {
                     )}
                   </div>
                   {w.near_traffic && <div className="map-popup__delay">Delayed near {w.hotspot}</div>}
-                  <SafetyControls worker={w} onAction={safetyAction} />
+                  <SafetyControls worker={w} onAction={canControl ? safetyAction : null} />
                 </div>
               </Popup>
             </Marker>
@@ -475,7 +482,9 @@ export default function LiveMap() {
             {actionError}
           </Alert>
         )}
-        {live?.safety && <SafetyPanel safety={live.safety} workers={workers} onAction={safetyAction} />}
+        {live?.safety && (
+          <SafetyPanel safety={live.safety} workers={workers} onAction={canControl ? safetyAction : null} />
+        )}
         <div className="card">
           <div className="live-map__legend">
             {legend.map((item) => (

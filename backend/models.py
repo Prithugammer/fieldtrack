@@ -10,6 +10,7 @@ time they are needed, so they can never drift out of sync with the times.
 from datetime import datetime
 
 import bcrypt
+from flask import current_app, has_app_context
 from sqlalchemy import CheckConstraint, UniqueConstraint
 
 from extensions import db
@@ -57,12 +58,19 @@ class User(db.Model):
 
     def set_password(self, plain):
         """Store a bcrypt hash of the password (the plain text is never saved)."""
-        self.password_hash = bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        data = plain.encode("utf-8")
+        if len(data) > 72:  # bcrypt's limit; the API validates this first (validate_password)
+            raise ValueError("Passwords can be at most 72 bytes long.")
+        rounds = current_app.config.get("BCRYPT_ROUNDS", 12) if has_app_context() else 12
+        self.password_hash = bcrypt.hashpw(data, bcrypt.gensalt(rounds)).decode("utf-8")
 
     def check_password(self, plain):
         if not self.password_hash or plain is None:
             return False
-        return bcrypt.checkpw(plain.encode("utf-8"), self.password_hash.encode("utf-8"))
+        data = plain.encode("utf-8")
+        if len(data) > 72:  # can never match a bcrypt hash; avoids bcrypt's ValueError
+            return False
+        return bcrypt.checkpw(data, self.password_hash.encode("utf-8"))
 
     def can_log_in(self):
         return self.is_active and self.role in STAFF_ROLES and self.password_hash is not None

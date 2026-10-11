@@ -11,6 +11,39 @@ from validation import day_bounds
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
 
 
+def _needs_attention(flagged_pending, jobs_today, open_entries, today_start):
+    """The 'Needs attention' list: flagged entries, understaffed jobs and overnight shifts."""
+    items = []
+    for e in flagged_pending:
+        items.append(
+            {
+                "type": "flagged_entry",
+                "ref_id": e.entry_id,
+                "message": f"{e.worker.full_name} · {e.job.title}: {e.flag_reason}",
+            }
+        )
+    for j in jobs_today:
+        if j.status != "Completed" and j.assigned_count() < j.crew_size:
+            items.append(
+                {
+                    "type": "understaffed_job",
+                    "ref_id": j.job_id,
+                    "message": f"'{j.title}' has {j.assigned_count()} of {j.crew_size} crew assigned.",
+                }
+            )
+    for e in open_entries:
+        if e.clock_in < today_start:
+            items.append(
+                {
+                    "type": "open_overnight",
+                    "ref_id": e.entry_id,
+                    "message": f"{e.worker.full_name} still clocked in since "
+                    f"{e.clock_in.strftime('%b %d %H:%M')}.",
+                }
+            )
+    return items
+
+
 @dashboard_bp.get("")
 @role_required(*STAFF_ROLES)
 def dashboard():
@@ -37,34 +70,7 @@ def dashboard():
         if w.user_id not in assigned_today
     ]
 
-    needs_attention = []
-    for e in flagged_pending:
-        needs_attention.append(
-            {
-                "type": "flagged_entry",
-                "ref_id": e.entry_id,
-                "message": f"{e.worker.full_name} · {e.job.title}: {e.flag_reason}",
-            }
-        )
-    for j in jobs_today:
-        if j.status != "Completed" and j.assigned_count() < j.crew_size:
-            needs_attention.append(
-                {
-                    "type": "understaffed_job",
-                    "ref_id": j.job_id,
-                    "message": f"'{j.title}' has {j.assigned_count()} of {j.crew_size} crew assigned.",
-                }
-            )
-    for e in open_entries:
-        if e.clock_in < start:
-            needs_attention.append(
-                {
-                    "type": "open_overnight",
-                    "ref_id": e.entry_id,
-                    "message": f"{e.worker.full_name} still clocked in since "
-                    f"{e.clock_in.strftime('%b %d %H:%M')}.",
-                }
-            )
+    needs_attention = _needs_attention(flagged_pending, jobs_today, open_entries, start)
 
     return jsonify(
         {

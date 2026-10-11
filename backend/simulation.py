@@ -80,16 +80,25 @@ def build_route(user_id, day, site_lat, site_lng):
     return dict(_road_route(user_id, day, site_lat, site_lng))
 
 
-def _build_route(user_id, day, site_lat, site_lng):
-    rng = random.Random(f"route:{user_id}:{day.isoformat()}")
-    end = (site_lat, site_lng)
+def _pick_start(rng, end):
+    """Where the commute begins: a landmark the right distance from the site, nudged off-centre.
 
+    Returns (landmark name, start point snapped to the road network).
+    """
     names = sorted(LANDMARKS)
     starts = [
         n for n in names if START_MIN_KM * 1000 <= _dist(LANDMARKS[n], end) <= START_MAX_KM * 1000
     ]
     start_name = rng.choice(starts or names)
     start = snap(*random_point_near(*LANDMARKS[start_name], 0.4, rng))  # set off from a road
+    return start_name, start
+
+
+def _candidate_waypoints(start_name, start, end):
+    """Landmarks worth driving through, best first (busy junctions before quiet ones).
+
+    A waypoint must be clear of both ends and must not make the trip much longer than direct.
+    """
     direct = _dist(start, end)
 
     def detour(n):
@@ -98,7 +107,7 @@ def _build_route(user_id, day, site_lat, site_lng):
 
     vias = [
         n
-        for n in names
+        for n in sorted(LANDMARKS)
         if n != start_name
         and _dist(LANDMARKS[n], end) > 600
         and _dist(LANDMARKS[n], start) > 600
@@ -106,38 +115,31 @@ def _build_route(user_id, day, site_lat, site_lng):
     ]
     # Main roads run through the busy junctions, so prefer those as waypoints.
     vias.sort(key=lambda n: (n not in TRAFFIC_HOTSPOTS, detour(n)))
-    want = rng.randint(1, 2)
-    spots = {n: random_point_near(*LANDMARKS[n], 0.08, rng) for n in vias}
+    return vias
 
-    # Each waypoint can pass on its own and still zig-zag together with another, so judge the
-    # whole route: take the first combination (in preference order, trying fewer waypoints if
-    # needed) whose total length stays within MAX_ROUTE_RATIO of the straight line.
-    chosen, points = [], [start, end]
-    for size in ([2, 1] if want == 2 else [1]):
+
+def _choose_waypoints(start, end, vias, spots, want):
+    """The first waypoint combination whose WHOLE route stays within MAX_ROUTE_RATIO.
+
+    Each waypoint can pass on its own and still zig-zag together with another, so judge the
+    route as a whole: try `want` waypoints (in preference order), then fewer. Returns
+    (chosen landmark names, route points); no waypoints and a straight line if none fits.
+    """
+    direct = _dist(start, end)
+    for size in [2, 1] if want == 2 else [1]:
         for combo in combinations(vias, size):
             ordered = sorted(combo, key=lambda n: _dist(start, LANDMARKS[n]))
             candidate = [start] + [spots[n] for n in ordered] + [end]
-            length = sum(_dist(a, b) for a, b in zip(candidate, candidate[1:]))
-            if length <= MAX_ROUTE_RATIO * direct:
-                chosen, points = ordered, candidate
-                break
-        if chosen:
-            break
+            if _length(candidate) <= MAX_ROUTE_RATIO * direct:
+                return ordered, candidate
+    return [], [start, end]
 
-    # Drive along the roads. If the waypoints make the drive much longer than the shortest
-    # one (two landmarks can be close as the crow flies but far apart by road), go direct.
-    road = road_path(points)
-    direct_road = road_path([start, end])
-    if chosen and _length(road) > MAX_DETOUR * _length(direct_road):
-        chosen, road = [], direct_road
-    points = road + [end]  # ...then walk from the nearest road onto the site
 
-    # Commute time without traffic: distance at this worker's usual speed through the valley,
-    # kept within 8-35 minutes.
-    length_km = _length(points) / 1000
-    base_minutes = min(35, max(8, round(length_km / rng.uniform(15, 28) * 60)))
+def _split_into_pieces(points, base_minutes):
+    """Cut the route into short pieces and time each; a piece in a traffic hotspot is slowed.
 
-    # Split into short pieces; a piece whose midpoint is in a hotspot is slowed down.
+    Returns (pieces, total length in metres).
+    """
     pieces = []
     for seg, (a, b) in enumerate(zip(points, points[1:])):
         n = max(1, math.ceil(_dist(a, b) / PIECE_M))
@@ -158,7 +160,35 @@ def _build_route(user_id, day, site_lat, site_lng):
         if pc["hotspot"]:
             minutes /= TRAFFIC_HOTSPOTS[pc["hotspot"]]["speed_multiplier"]
         pc["minutes"] = minutes
+    return pieces, total_m
 
+
+def _build_route(user_id, day, site_lat, site_lng):
+    # The order of the random draws below is part of the contract: it makes a worker's route on
+    # a given day identical on every run, so do not reorder them.
+    rng = random.Random(f"route:{user_id}:{day.isoformat()}")
+    end = (site_lat, site_lng)
+
+    start_name, start = _pick_start(rng, end)
+    vias = _candidate_waypoints(start_name, start, end)
+    want = rng.randint(1, 2)
+    spots = {n: random_point_near(*LANDMARKS[n], 0.08, rng) for n in vias}
+    chosen, points = _choose_waypoints(start, end, vias, spots, want)
+
+    # Drive along the roads. If the waypoints make the drive much longer than the shortest
+    # one (two landmarks can be close as the crow flies but far apart by road), go direct.
+    road = road_path(points)
+    direct_road = road_path([start, end])
+    if chosen and _length(road) > MAX_DETOUR * _length(direct_road):
+        chosen, road = [], direct_road
+    points = road + [end]  # ...then walk from the nearest road onto the site
+
+    # Commute time without traffic: distance at this worker's usual speed through the valley,
+    # kept within 8-35 minutes.
+    length_km = _length(points) / 1000
+    base_minutes = min(35, max(8, round(length_km / rng.uniform(15, 28) * 60)))
+
+    pieces, total_m = _split_into_pieces(points, base_minutes)
     return {
         "user_id": user_id,
         "start_name": start_name,

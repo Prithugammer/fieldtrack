@@ -14,7 +14,13 @@ DAY = date(2026, 10, 1)
 
 @pytest.fixture
 def app():
-    app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"})
+    app = create_app(
+        {
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+            "BCRYPT_ROUNDS": 4,  # the minimum cost: keeps the many logins in the suite fast
+        }
+    )
     with app.app_context():
         db.drop_all()
         db.create_all()
@@ -22,6 +28,7 @@ def app():
         yield app
         db.session.remove()
         db.drop_all()
+        db.engine.dispose()  # close the in-memory connection so it is not left to the GC
 
 
 @pytest.fixture

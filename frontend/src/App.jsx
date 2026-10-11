@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import { ProtectedRoute } from './context/AuthContext'
@@ -5,10 +6,13 @@ import Crew from './pages/Crew'
 import Dashboard from './pages/Dashboard'
 import Jobs from './pages/Jobs'
 import JobSites from './pages/JobSites'
-import LiveMap from './pages/LiveMap'
 import Login from './pages/Login'
 import Reports from './pages/Reports'
+import { LoadingState } from './components/States'
 import TimeEntries from './pages/TimeEntries'
+
+// The Live Map pulls in Leaflet (the largest dependency), so it is fetched only when opened.
+const LiveMap = lazy(() => import('./pages/LiveMap'))
 
 /**
  * Route table. Everything except /login sits inside ProtectedRoute + Layout, so a missing or
@@ -27,7 +31,14 @@ export default function App() {
       >
         <Route index element={<Dashboard />} />
         <Route path="jobs" element={<Jobs />} />
-        <Route path="live-map" element={<LiveMap />} />
+        <Route
+          path="live-map"
+          element={
+            <Suspense fallback={<LoadingState label="Loading the map…" />}>
+              <LiveMap />
+            </Suspense>
+          }
+        />
         <Route path="sites" element={<JobSites />} />
         <Route path="crew" element={<Crew />} />
         <Route path="time-entries" element={<TimeEntries />} />

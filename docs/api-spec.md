@@ -22,9 +22,42 @@ about a single field.
 |------|---------|
 | 400 | Validation failed (missing/invalid field). `field` is set. |
 | 401 | Missing, invalid or expired token; or wrong email/password on login. |
-| 403 | Authenticated, but the role is not allowed (or the account is deactivated). |
-| 404 | The referenced record does not exist. |
+| 403 | Authenticated, but the role is not allowed (or the account is deactivated). The role is read from the database on every request, so a demotion takes effect immediately. |
+| 404 | The referenced record does not exist (including an id too large to exist). |
 | 409 | Business-rule conflict: double-booking, crew full, not assigned, overlap, already decided, duplicate email. |
+| 429 | Too many failed logins (see *Login throttling*). Carries a `Retry-After` header (seconds). |
+
+## Numbers and ids
+
+Whole numbers and ids are checked before they reach the database:
+
+- Everything must fit a signed 64-bit integer (`-9223372036854775808` to `9223372036854775807`);
+  otherwise **400** `"<Field> is out of range."`.
+- `NaN`, `Infinity`, `-Infinity` and JSON literals such as `1e999` are not numbers: **400**.
+  Booleans, text and fractions (`1.5`) are not whole numbers: **400**.
+- Ids (`user_id`, `job_id`, `site_id`, query filters such as `?worker=`, `?route=`) must be **1 or more**.
+  An invalid id in a request body or query string is a **400** with `field` set; an id that is valid
+  but does not exist is a **404**.
+- An id in the URL path (`/jobs/{job_id}`, ...) that is zero, or larger than 64 bits, is a **404**.
+- Decimals (latitude, longitude) must be finite and in range. Dates are exactly `YYYY-MM-DD`.
+- Passwords are 8-128 characters and at most **72 bytes** (a bcrypt limit); longer is a **400**.
+
+## Login throttling
+
+Only **failed** logins count. After 5 failures for one email (`LOGIN_MAX_FAILURES_PER_ACCOUNT`) or 20
+from one client address (`LOGIN_MAX_FAILURES_PER_CLIENT`) within 300 s (`LOGIN_RATE_WINDOW_SECONDS`),
+`POST /auth/login` answers **429** `{"error": "Too many failed sign-in attempts. Try again in N seconds.", "field": null}`
+with `Retry-After: N` — even for the correct password — until the oldest failure leaves the window.
+Blocked attempts are not counted, so a block never extends itself and no account is locked
+permanently. A successful login clears that account's failures. Unknown emails are throttled
+exactly like real ones. The counters live in the server process (see README, *Deployment notes*).
+
+## Security headers
+
+Every response carries `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+`Referrer-Policy: no-referrer`, `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'`
+and `Cache-Control: no-store`. `Strict-Transport-Security` is added only when `HSTS_ENABLED=1` **and**
+the request arrived over HTTPS.
 
 ---
 
@@ -287,18 +320,27 @@ moment, with the rest setting off during the window.
 
 
 ## Safety / emergency
-Escalation runs inside `GET /map/live` (each poll advances it). That response gains
+`GET /map/live` is **read-only**: it reports the current safety state but never changes it, however
+often it is polled. Time-based escalation (idle timers, check-in windows, the configured random
+accident roll) is advanced by **`POST /safety/tick`**, which the Live Map page calls once a second; it
+returns the same body as `GET /map/live` (and accepts `?route=<user_id>`). Any staff role may tick,
+because it only moves time forward. The `GET /map/live` response gains
 `workers[].safety` (`state`, `checkin`, `elapsed_s`, `window_remaining_s`, `incapacitated`, `stopped`,
 `on_break`, `break_zone`), `workers[].sim_status`, a worker `status` of `EMERGENCY`, `Post-incident` or
 `Stopped` when applicable, and a top-level `safety` block: `{ config, seed, privacy_note, alerts[], notifications[] }`.
 Each alert has `worker_id`, `worker_name`, `state`, `stage`, `level` (`warning`/`critical`/`info`),
 `elapsed_s`, `window_remaining_s`, `location { lat, lng, label }` and `nearest_coworker`.
 
-All routes: **Role:** Staff. Errors use the usual `{error, field}` shape (404 unknown worker, 409 wrong state).
+**Roles.** Reading (`GET /safety/config`, `GET /safety/audit`, `GET /map/live`) and `POST /safety/tick`: any
+Staff. Every route that **changes** safety state (`accident`, `sos`, `respond`, `break`, `resolve`,
+`return-to-duty`): **Supervisor or Admin only** — a Dispatcher gets **403** (checked before anything
+else, so it is 403 even when an emergency exists), no token gets **401**. Errors use the usual
+`{error, field}` shape (404 unknown worker, 409 wrong state).
 
 | Route | Purpose |
 |-------|---------|
 | `GET /safety/config` | Active mode, thresholds, break zones, seed |
+| `POST /safety/tick` | Advance the escalation to now; returns the live-map state (Staff) |
 | `POST /safety/workers/{user_id}/accident` | Demo: worker stops and cannot reply (201) |
 | `POST /safety/workers/{user_id}/sos` | Worker SOS: straight to EMERGENCY (201) |
 | `POST /safety/workers/{user_id}/respond` | Worker replies "I'm OK" -> `{ok, cleared}` (409 if incapacitated) |

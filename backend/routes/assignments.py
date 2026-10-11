@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from auth import role_required
 from extensions import db
 from models import STAFF_ROLES, Assignment, Job, TimeEntry, User
-from validation import ApiError, day_bounds, get_json, get_or_404, parse_date, parse_int
+from validation import ApiError, day_bounds, get_json, get_or_404, parse_date, parse_id
 
 assignments_bp = Blueprint("assignments", __name__, url_prefix="/api/assignments")
 
@@ -25,10 +25,10 @@ def _double_booking_message(worker, existing):
 def list_assignments():
     """List assignments, filterable by ?job_id=, ?user_id= and ?work_date=."""
     query = Assignment.query
-    job_id = parse_int(request.args.get("job_id"), "job_id", "Job", required=False)
+    job_id = parse_id(request.args.get("job_id"), "job_id", "Job", required=False)
     if job_id:
         query = query.filter(Assignment.job_id == job_id)
-    user_id = parse_int(request.args.get("user_id"), "user_id", "Worker", required=False)
+    user_id = parse_id(request.args.get("user_id"), "user_id", "Worker", required=False)
     if user_id:
         query = query.filter(Assignment.user_id == user_id)
     work_date = parse_date(request.args.get("work_date"), "work_date", "Work date", required=False)
@@ -50,8 +50,8 @@ def create_assignment():
       4. CREW SIZE RULE: the job still has an open spot -> else 409.
     """
     data = get_json()
-    job_id = parse_int(data.get("job_id"), "job_id", "Job")
-    user_id = parse_int(data.get("user_id"), "user_id", "Worker")
+    job_id = parse_id(data.get("job_id"), "job_id", "Job")
+    user_id = parse_id(data.get("user_id"), "user_id", "Worker")
     job = get_or_404(Job, job_id, "Job", field="job_id")
     worker = get_or_404(User, user_id, "Worker", field="user_id")
 

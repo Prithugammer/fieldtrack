@@ -1,6 +1,8 @@
 """Live Map: job sites plus SIMULATED worker positions (see simulation.py).
 
-Read-only. Positions are computed from the wall clock on every request; nothing is written.
+Read-only. Positions are computed from the wall clock on every request; nothing is written,
+and that includes the safety state: GET /api/map/live only *reports* it. The escalation is
+advanced by POST /api/safety/tick (routes/safety.py).
 """
 
 from datetime import date
@@ -19,6 +21,7 @@ from simulation import (
     seconds_to_reset,
     sim_clock,
 )
+from validation import parse_id
 
 map_bp = Blueprint("map", __name__, url_prefix="/api/map")
 
@@ -39,10 +42,13 @@ def live():
 
     ?route=<user_id> also returns that worker's remaining route to their site (as "path" on
     the worker) while they are on the road, for the line drawn when a worker is selected.
+
+    Safety info (each worker's state, the alerts) is added as a read-only snapshot. Nothing is
+    advanced here, however often it is polled.
     """
-    state = compute_live_state(path_for=request.args.get("route", type=int))
-    # Safety escalation is driven by this poll; it adds each worker's safety info and the alerts.
-    return jsonify(current_app.extensions["safety"].process(state))
+    route = parse_id(request.args.get("route"), "route", "Route", required=False)
+    state = compute_live_state(path_for=route)
+    return jsonify(current_app.extensions["safety"].view(state))
 
 
 @map_bp.get("/sim-clock")

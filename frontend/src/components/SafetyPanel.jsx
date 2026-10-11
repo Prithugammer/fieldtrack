@@ -72,7 +72,7 @@ function AlertCard({ alert, onAction }) {
           <span className="muted">No available co-worker nearby.</span>
         )}
       </div>
-      {alert.state === 'EMERGENCY' && (
+      {alert.state === 'EMERGENCY' && onAction && (
         <div className="safety-alert__actions">
           <input
             className="input safety-alert__note"
@@ -104,13 +104,15 @@ function AlertCard({ alert, onAction }) {
           <span className="small muted">
             {alert.resolution?.note ? `Note: ${alert.resolution.note}` : 'Real incident resolved.'}
           </span>
-          <button
-            type="button"
-            className="btn btn--secondary btn--sm"
-            onClick={() => onAction(`workers/${id}/return-to-duty`)}
-          >
-            Return to duty
-          </button>
+          {onAction && (
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={() => onAction(`workers/${id}/return-to-duty`)}
+            >
+              Return to duty
+            </button>
+          )}
         </div>
       )}
     </li>
@@ -142,15 +144,18 @@ function Messages({ notifications, workers, onAction }) {
             {n.worker_name}
           </div>
           <div className="small">{n.text}</div>
-          {n.channel === 'worker' && newestCheckin[n.worker_id] === n.id && waiting.has(n.worker_id) && (
-            <button
-              type="button"
-              className="btn btn--success btn--sm"
-              onClick={() => onAction(`workers/${n.worker_id}/respond`)}
-            >
-              Reply “I’m OK” as {n.worker_name}
-            </button>
-          )}
+          {n.channel === 'worker' &&
+            newestCheckin[n.worker_id] === n.id &&
+            waiting.has(n.worker_id) &&
+            onAction && (
+              <button
+                type="button"
+                className="btn btn--success btn--sm"
+                onClick={() => onAction(`workers/${n.worker_id}/respond`)}
+              >
+                Reply “I’m OK” as {n.worker_name}
+              </button>
+            )}
         </li>
       ))}
     </ul>
@@ -231,7 +236,8 @@ function AuditLog() {
 /**
  * Safety / emergency panel: active alerts with the supervisor's resolve buttons, the worker-side
  * message log (where a simulated worker can answer a check-in), and the audit log.
- * `safety` is the "safety" block of GET /api/map/live.
+ * `safety` is the "safety" block of the live-map state. `onAction` is null for roles that may only
+ * watch (Dispatcher), which hides every control.
  */
 export default function SafetyPanel({ safety, workers, onAction }) {
   const [tab, setTab] = useState('alerts')

@@ -6,17 +6,19 @@ Everything needed to present FieldTrack live. For what the project is and how it
 
 ## Day-of checklist
 
-1. **Run `python seed.py` the morning of the demo** (it's in step 2). Seed dates are relative to
-   today, so an older seed won't have today's jobs.
+1. **Refresh the demo data the morning of the demo** (it's in step 2). Seed dates are relative to
+   today, so an older seed won't have today's jobs. Refreshing erases the local demo database, so
+   it needs the explicit `--reset --yes` flags; plain `python seed.py` never deletes anything.
 2. **Start the backend** (PowerShell, terminal 1, from the project folder):
    ```powershell
    cd backend
    .venv\Scripts\Activate.ps1
-   python seed.py
+   python seed.py --reset --yes
    python app.py
    ```
-   If activation is blocked, skip it and run `.venv\Scripts\python.exe seed.py` then
-   `.venv\Scripts\python.exe app.py`.
+   If activation is blocked, skip it and run `.venv\Scripts\python.exe seed.py --reset --yes` then
+   `.venv\Scripts\python.exe app.py`. (The reset works only on the local SQLite database; it is
+   refused for production and for any other database, e.g. a stray `DATABASE_URL`.)
 3. **Start the frontend** (PowerShell, terminal 2, from the project folder):
    ```powershell
    cd frontend
@@ -88,7 +90,12 @@ The login page has click-to-fill buttons for these.
 ## If something goes wrong
 
 - **Login says "Invalid email or password" for a demo account** — the database has not been
-  seeded. Stop nothing; just run `python seed.py` in `backend/` and sign in again.
+  seeded. Stop nothing; just run `python seed.py` in `backend/` (an empty database is filled; a
+  database that already has data is left alone, use `--reset --yes` to reload it) and sign in again.
+- **Login says "Too many failed sign-in attempts"** — five wrong passwords for one account (or 20
+  from one computer) pause sign-in for 5 minutes. Wait it out; restarting the backend also clears it.
+- **Safety buttons (accident, SOS, resolve) are missing** — only Supervisors and Admins get them;
+  sign in as `supervisor@fieldtrack.com` for the safety demo. Dispatchers can watch but not act.
 - **Pages show "Cannot reach the FieldTrack server"** — the backend in terminal 1 has stopped;
   start it again with `python app.py`.
 - **Live Map looks empty or frozen** — check the *New cycle in* countdown: right after a

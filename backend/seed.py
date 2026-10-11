@@ -1,9 +1,16 @@
-"""Reset the database and load realistic demo data.
+"""Load realistic demo data into the FieldTrack database.
 
-    python seed.py
+    python seed.py                 load the demo data into an EMPTY database
+                                   (does nothing, and says so, if the database already has data)
+    python seed.py --reset --yes   ERASE the whole database, then load the demo data
+
+Ordinary seeding never deletes anything, so running it twice is harmless. The destructive reset
+must be asked for with --reset, confirmed (--yes, or typing RESET at the prompt), and is refused
+for production (APP_ENV=production) and for any database that is not SQLite, so a stray
+DATABASE_URL cannot make it wipe somebody else's database.
 
 Dates are relative to TODAY so the demo always works: jobs run yesterday, today and
-tomorrow. Everything is recreated from scratch each time this script runs.
+tomorrow. Re-run with --reset on the day you present to refresh them.
 
 Summary of what is created:
   * 1 admin, 2 dispatchers, 1 supervisor (can log in) and 8 workers with trades
@@ -13,9 +20,13 @@ Summary of what is created:
     and 6 workers currently clocked in today
 """
 
+import argparse
 import math
 import random
+import sys
 from datetime import date, datetime, time, timedelta
+
+from sqlalchemy.engine import make_url
 
 from app import create_app
 from extensions import db
@@ -39,14 +50,65 @@ def at(day, hh, mm=0):
     return datetime.combine(day, time(hh, mm))
 
 
-def seed():
-    """Drop every table, recreate them, and load the demo dataset described above."""
+class SeedRefused(Exception):
+    """A seeding request was refused for safety (the message says why)."""
+
+
+def database_has_data():
+    """True if any application table already holds rows."""
+    return any(
+        model.query.first() is not None
+        for model in (User, JobSite, Job, Assignment, TimeEntry, LocationPing)
+    )
+
+
+def check_reset_allowed(config, confirmed, prompt=None):
+    """Raise SeedRefused unless wiping this database has been properly authorised.
+
+    Refused: production, any non-SQLite database, and an unconfirmed request. `confirmed` is the
+    --yes flag; without it `prompt` (a function returning what the user typed) must return
+    "RESET", and with no prompt available (no terminal) the reset is refused.
+    """
+    if config.get("APP_ENV") == "production":
+        raise SeedRefused("Refusing to reset: APP_ENV=production. Production data is never wiped.")
+    url = make_url(config["SQLALCHEMY_DATABASE_URI"])
+    if not url.drivername.startswith("sqlite"):
+        raise SeedRefused(
+            f"Refusing to reset a {url.get_backend_name()} database ({url.database}). "
+            "Reset only works on the local SQLite database; check DATABASE_URL."
+        )
+    if confirmed:
+        return
+    if prompt is None:
+        raise SeedRefused("Refusing to reset without confirmation: add --yes.")
+    target = url.database or "the in-memory database"
+    try:
+        answer = prompt(f"This ERASES every table in {target}. Type RESET to continue: ")
+    except (EOFError, KeyboardInterrupt):  # no terminal input, or Ctrl+C: never proceed
+        answer = ""
+    if answer.strip() != "RESET":
+        raise SeedRefused("Reset cancelled.")
+
+
+def seed(reset=False):
+    """Load the demo dataset described above. Returns True if data was loaded.
+
+    Without `reset` it only fills an empty database and never deletes anything. With `reset=True`
+    it drops and recreates every table first: callers must have passed check_reset_allowed().
+    """
     today = date.today()
     yesterday = today - timedelta(days=1)
     tomorrow = today + timedelta(days=1)
 
-    db.drop_all()
+    if reset:
+        db.drop_all()
     db.create_all()
+    if not reset and database_has_data():
+        print(
+            "The database already contains data, so nothing was changed. "
+            "Use `python seed.py --reset --yes` to erase it and reload the demo data."
+        )
+        return False
 
     # ---- Users --------------------------------------------------------------------------
     def staff(name, email, role, password, phone):
@@ -72,12 +134,16 @@ def seed():
 
     ramesh = worker("Ramesh Karki", "ramesh.karki@fieldtrack.com", "Carpenter", "+977-9851-0131")
     sita = worker("Sita Rai", "sita.rai@fieldtrack.com", "Electrician", "+977-9851-0132")
-    dipak = worker("Dipak Tamang", "dipak.tamang@fieldtrack.com", "Concrete Finisher", "+977-9851-0133")
+    dipak = worker(
+        "Dipak Tamang", "dipak.tamang@fieldtrack.com", "Concrete Finisher", "+977-9851-0133"
+    )
     suresh = worker(
         "Suresh Magar", "suresh.magar@fieldtrack.com", "Equipment Operator", "+977-9851-0134"
     )
     pooja = worker("Pooja Basnet", "pooja.basnet@fieldtrack.com", "Laborer", "+977-9851-0135")
-    santosh = worker("Santosh Khadka", "santosh.khadka@fieldtrack.com", "Ironworker", "+977-9851-0136")
+    santosh = worker(
+        "Santosh Khadka", "santosh.khadka@fieldtrack.com", "Ironworker", "+977-9851-0136"
+    )
     kamala = worker("Kamala Poudel", "kamala.poudel@fieldtrack.com", "Plumber", "+977-9851-0137")
     bishal = worker("Bishal Neupane", "bishal.neupane@fieldtrack.com", "Laborer", "+977-9851-0138")
 
@@ -267,7 +333,9 @@ def seed():
     entry(dipak, j3, at(y, 12), at(y, 15, 30), (30, -35), (45, -25))
     # Yesterday night — Koteshwor culvert: 19:00 -> 03:30 today (crosses midnight = 8.5 h)
     entry(suresh, j2, at(y, 19), at(today, 3, 30), (80, 120), (60, 100))
-    entry(bishal, j2, at(y, 19, 10), at(today, 3, 30), (610, 0), (90, 110))  # FLAGGED clock-in 610 m
+    entry(
+        bishal, j2, at(y, 19, 10), at(today, 3, 30), (610, 0), (90, 110)
+    )  # FLAGGED clock-in 610 m
 
     # Today — currently clocked in (no clock-out yet)
     t = today
@@ -287,9 +355,31 @@ def seed():
         f"{Assignment.query.count()} assignments, {TimeEntry.query.count()} time entries "
         f"({flagged} flagged, {approved} approved), {LocationPing.query.count()} location pings."
     )
+    return True
+
+
+def main(argv=None, app=None, prompt=None):
+    """Command-line entry point. Returns the process exit code (0 ok, 1 refused)."""
+    parser = argparse.ArgumentParser(description="Load FieldTrack demo data.")
+    parser.add_argument(
+        "--reset", action="store_true", help="ERASE the database first (SQLite only)"
+    )
+    parser.add_argument("--yes", action="store_true", help="confirm --reset without a prompt")
+    args = parser.parse_args(argv)
+    if prompt is None and sys.stdin.isatty():
+        prompt = input
+
+    app = app or create_app()
+    with app.app_context():
+        try:
+            if args.reset:
+                check_reset_allowed(app.config, args.yes, prompt)
+            seed(reset=args.reset)
+        except SeedRefused as err:
+            print(err, file=sys.stderr)
+            return 1
+    return 0
 
 
 if __name__ == "__main__":
-    app = create_app()
-    with app.app_context():
-        seed()
+    sys.exit(main())

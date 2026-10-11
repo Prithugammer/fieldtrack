@@ -9,9 +9,10 @@ import os
 from flask import Flask, jsonify
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from auth import auth_bp
-from config import Config
+from config import Config, ConfigError, resolve_secrets
 from extensions import db, jwt
 from routes.assignments import assignments_bp
 from routes.dashboard import dashboard_bp
@@ -23,6 +24,7 @@ from routes.sites import sites_bp
 from routes.time_entries import time_entries_bp
 from routes.users import users_bp
 from safety import SafetyConfig, SafetyService
+from security import LoginRateLimiter, register_security_headers
 from validation import ApiError
 
 
@@ -32,6 +34,18 @@ def create_app(overrides=None):
     app.config.from_object(Config)
     if overrides:
         app.config.update(overrides)
+    resolve_secrets(app.config)  # raises ConfigError if production has no strong secret
+
+    if app.config["TRUSTED_PROXY_COUNT"]:
+        n = app.config["TRUSTED_PROXY_COUNT"]
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=n, x_proto=n)
+    register_security_headers(app)
+    if app.config["LOGIN_RATE_LIMIT_ENABLED"]:
+        app.extensions["login_limiter"] = LoginRateLimiter(
+            app.config["LOGIN_MAX_FAILURES_PER_ACCOUNT"],
+            app.config["LOGIN_MAX_FAILURES_PER_CLIENT"],
+            app.config["LOGIN_RATE_WINDOW_SECONDS"],
+        )
 
     CORS(app, resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}})
     db.init_app(app)
@@ -77,7 +91,8 @@ def _register_error_handlers(app):
     @app.errorhandler(ApiError)
     def handle_api_error(err):
         """Business-rule and validation errors raised by the routes (400/403/404/409)."""
-        return jsonify(err.to_dict()), err.status
+        db.session.rollback()  # a rejected request must never leave half-applied changes behind
+        return jsonify(err.to_dict()), err.status, err.headers
 
     @app.errorhandler(HTTPException)
     def handle_http_error(err):
@@ -116,8 +131,13 @@ def _register_error_handlers(app):
 
 
 if __name__ == "__main__":
-    create_app().run(
+    debug = os.environ.get("FLASK_DEBUG", "0").lower() in ("1", "true", "yes")
+    application = create_app()
+    if debug and application.config["APP_ENV"] == "production":
+        # The interactive debugger runs arbitrary code for anyone who can reach it.
+        raise ConfigError("FLASK_DEBUG must not be enabled when APP_ENV=production.")
+    application.run(
         host=os.environ.get("HOST", "127.0.0.1"),
         port=int(os.environ.get("PORT", "5000")),
-        debug=os.environ.get("FLASK_DEBUG", "0").lower() in ("1", "true", "yes"),
+        debug=debug,
     )

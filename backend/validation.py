@@ -5,6 +5,7 @@ form {"error": "...", "field": "..."} so the React UI can show the message under
 form field.
 """
 
+import math
 import re
 from datetime import date, datetime, time, timedelta
 
@@ -12,18 +13,25 @@ from flask import request
 
 from extensions import db
 
+# SQLite stores INTEGER as a signed 64-bit value; anything outside this range makes the driver
+# raise OverflowError, so ids and counts are range-checked before they reach SQLAlchemy.
+INT64_MIN = -(2**63)
+INT64_MAX = 2**63 - 1
+
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 PHONE_RE = re.compile(r"^[0-9 +()\-.]{7,20}$")
 
 
 class ApiError(Exception):
     """An error that should be returned to the client as JSON."""
 
-    def __init__(self, message, field=None, status=400):
+    def __init__(self, message, field=None, status=400, headers=None):
         super().__init__(message)
         self.message = message
         self.field = field
         self.status = status
+        self.headers = headers or {}
 
     def to_dict(self):
         return {"error": self.message, "field": self.field}
@@ -57,20 +65,40 @@ def require_str(value, field, label, min_len=1, max_len=255, required=True):
     return value
 
 
+MAX_PASSWORD_BYTES = 72  # bcrypt only uses the first 72 bytes and (v5+) rejects longer input
+
+
+def validate_password(value, required=True):
+    """A password of 8-128 characters that bcrypt can hash (at most 72 UTF-8 bytes)."""
+    password = require_str(value, "password", "Password", 8, 128, required=required)
+    if password is not None and len(password.encode("utf-8")) > MAX_PASSWORD_BYTES:
+        raise ApiError(f"Password must be at most {MAX_PASSWORD_BYTES} bytes long.", "password")
+    return password
+
+
 def parse_int(value, field, label, min_value=None, max_value=None, required=True):
-    """Validate a whole number within optional bounds."""
+    """Validate a whole number within optional bounds.
+
+    Every result also fits a signed 64-bit integer (SQLite's INTEGER), so an oversized value is
+    refused here with a 400 instead of crashing later inside the database driver. Non-finite
+    floats (inf, -inf, NaN) are not whole numbers and are refused too.
+    """
     if _is_blank(value):
         if required:
             raise ApiError(f"{label} is required.", field)
         return None
     if isinstance(value, bool):
         raise ApiError(f"{label} must be a whole number.", field)
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ApiError(f"{label} must be a whole number.", field)
     try:
         number = int(value)
         if isinstance(value, float) and value != number:
             raise ValueError
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         raise ApiError(f"{label} must be a whole number.", field)
+    if not INT64_MIN <= number <= INT64_MAX:
+        raise ApiError(f"{label} is out of range.", field)
     if min_value is not None and number < min_value:
         raise ApiError(f"{label} must be at least {min_value}.", field)
     if max_value is not None and number > max_value:
@@ -78,8 +106,13 @@ def parse_int(value, field, label, min_value=None, max_value=None, required=True
     return number
 
 
+def parse_id(value, field, label, required=True):
+    """Validate a database id: a whole number from 1 up to the signed 64-bit maximum."""
+    return parse_int(value, field, label, min_value=1, required=required)
+
+
 def parse_float(value, field, label, min_value=None, max_value=None, required=True):
-    """Validate a decimal number within optional bounds."""
+    """Validate a finite decimal number within optional bounds (NaN and infinity are refused)."""
     if _is_blank(value):
         if required:
             raise ApiError(f"{label} is required.", field)
@@ -88,9 +121,9 @@ def parse_float(value, field, label, min_value=None, max_value=None, required=Tr
         raise ApiError(f"{label} must be a number.", field)
     try:
         number = float(value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         raise ApiError(f"{label} must be a number.", field)
-    if number != number:  # NaN
+    if not math.isfinite(number):
         raise ApiError(f"{label} must be a number.", field)
     if min_value is not None and number < min_value:
         raise ApiError(f"{label} must be between {min_value} and {max_value}.", field)
@@ -114,7 +147,10 @@ def parse_date(value, field, label, required=True):
             raise ApiError(f"{label} is required.", field)
         return None
     try:
-        return date.fromisoformat(str(value).strip())
+        text = value.strip() if isinstance(value, str) else ""
+        if not DATE_RE.match(text):  # fromisoformat alone also takes "20261001" and "2026-W40-4"
+            raise ValueError
+        return date.fromisoformat(text)
     except ValueError:
         raise ApiError(f"{label} must be a date in YYYY-MM-DD format.", field)
 
@@ -174,8 +210,13 @@ def validate_phone(value, field="phone"):
 
 
 def get_or_404(model, record_id, label, field=None):
-    """Fetch a row by primary key or raise a 404 ApiError."""
-    record = db.session.get(model, record_id)
+    """Fetch a row by primary key or raise a 404 ApiError.
+
+    An id outside the 64-bit range can never exist, so it is a 404 without asking the database
+    (Flask's <int:> URL converter accepts any number of digits).
+    """
+    in_range = isinstance(record_id, int) and 1 <= record_id <= INT64_MAX
+    record = db.session.get(model, record_id) if in_range else None
     if record is None:
         raise ApiError(f"{label} #{record_id} was not found.", field, status=404)
     return record

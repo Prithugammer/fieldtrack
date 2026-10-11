@@ -78,7 +78,7 @@ instant.
 |-------|------------|
 | Backend | Python 3.10+, Flask 3, Flask-SQLAlchemy, Flask-JWT-Extended, Flask-CORS, bcrypt, python-dotenv, SQLite |
 | Frontend | React 19, Vite, react-router-dom, Leaflet + react-leaflet with Stadia Maps tiles (English labels), plain CSS with design tokens (light and dark themes) |
-| Quality | pytest (54 tests), black, Prettier |
+| Quality | pytest (440+ tests, 98% coverage), Vitest, black, Prettier, GitHub Actions CI |
 | Docs | Markdown + Mermaid diagrams in `docs/` |
 
 ## Setup
@@ -112,7 +112,13 @@ python app.py
 
 The API is now on http://localhost:5000 (health check: http://localhost:5000/api/health).
 `python seed.py` creates the SQLite database at `backend/instance/fieldtrack.db` and loads the
-demo data. **Run it before the first sign-in** — without it there are no accounts.
+demo data into it. **Run it before the first sign-in** — without it there are no accounts.
+It only fills an *empty* database: if data already exists it changes nothing and says so.
+
+> **Check `DATABASE_URL` first.** The app uses it if it is set in your shell or `backend/.env`. A
+> value left over from another project (for example a `postgresql://` URL) makes FieldTrack fail
+> to start. Clear it for this terminal with `Remove-Item Env:DATABASE_URL` (PowerShell) or
+> `unset DATABASE_URL`.
 
 ### Terminal 2 — frontend
 
@@ -141,7 +147,11 @@ Nothing needs configuring to run locally. To change a setting, copy `backend/.en
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `SECRET_KEY` / `JWT_SECRET_KEY` | a local development key | Signs login tokens — **set a long random value anywhere but your own machine** |
+| `APP_ENV` | `development` | `development`, `test` or `production`. **Production refuses to start** without a strong `SECRET_KEY` (≥ 32 characters, not a placeholder) and refuses `FLASK_DEBUG=1`. A mistyped value is an error, never a silent fallback |
+| `SECRET_KEY` / `JWT_SECRET_KEY` | a built-in key, **development only** | Signs login tokens. Required in production — generate with `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `LOGIN_MAX_FAILURES_PER_ACCOUNT` / `_PER_CLIENT` / `LOGIN_RATE_WINDOW_SECONDS` | `5` / `20` / `300` | Failed logins allowed per window before HTTP 429 |
+| `TRUSTED_PROXY_COUNT` | `0` | Reverse proxies to trust for the client address (needed for correct rate limiting behind a proxy) |
+| `HSTS_ENABLED` | off | Send `Strict-Transport-Security` (only over HTTPS) |
 | `DATABASE_URL` | `sqlite:///fieldtrack.db` | Database location |
 | `JWT_EXPIRES_HOURS` | `8` | How long a sign-in lasts |
 | `CORS_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | Browser origins allowed to call the API |
@@ -155,14 +165,20 @@ The frontend reads `VITE_API_URL` (default `http://127.0.0.1:5000`) — see
 
 ```bash
 cd backend
-pytest                           # 54 tests
 pip install -r requirements-dev.txt
+pytest                           # 440+ tests
+pytest --cov                     # with a coverage report (CI requires >= 85%)
 black --check .
 
 cd ../frontend
+npm test                         # Vitest smoke tests (sign-in, dashboard, errors, roles)
 npm run build                    # production build
 npm run format:check             # Prettier
 ```
+
+GitHub Actions (`.github/workflows/ci.yml`) runs the same checks on every push and pull request:
+`black --check`, `pytest --cov`, `prettier --check`, `vitest` and the production build. The tests
+use an in-memory database and never touch `backend/instance/fieldtrack.db`.
 
 The tests cover the haversine maths and the 199 m / 201 m flag boundary, shifts across
 midnight, double-booking, the assignment and overlap rules, approvals and their audit trail,
@@ -173,15 +189,26 @@ moving, traffic slowdown, read-only endpoint).
 
 ### Reset the data
 
-`python seed.py` (from `backend/`, with the virtualenv active) wipes and reloads everything.
-Seed dates are **relative to today** — jobs run yesterday, today and tomorrow — so re-run it on
-the day you present.
+Plain `python seed.py` is safe to run any time: it never deletes anything and does nothing if the
+database already holds data. To wipe the local database and reload the demo data:
+
+```bash
+python seed.py --reset --yes     # without --yes it asks you to type RESET
+```
+
+The reset is refused when `APP_ENV=production` and for any database that is not SQLite, so a stray
+`DATABASE_URL` can never make it erase someone else's data. Seed dates are **relative to today**
+— jobs run yesterday, today and tomorrow — so use `--reset --yes` on the day you present.
 
 ## Safety / emergency (man-down) alerts
 
 The Live Map also watches every simulated worker for trouble. A worker who is **on shift** but
 **has not moved** for the idle threshold gets a safety check-in; unanswered check-ins escalate to
-an EMERGENCY that only a supervisor can close. Everything is simulated: nobody is called or
+an EMERGENCY that only a supervisor can close. Every state-changing safety control (trigger an
+accident, SOS, "I'm OK", break, resolve, return to duty) is limited to **Supervisors and Admins** by the
+server; a Dispatcher can watch the map, alerts and audit log but gets HTTP 403 on any control.
+The Live Map is read-only over `GET /api/map/live`; the page advances the escalation with
+`POST /api/safety/tick` once a second. Everything is simulated: nobody is called or
 texted (the notifier is a mock, see below).
 
 ```
@@ -305,27 +332,56 @@ How the project provides evidence for the PRG 100 course learning outcomes (CLOs
 | ‹CLO — process and data modelling› | [dfd.md](docs/dfd.md), [erd.md](docs/erd.md), [data-dictionary.md](docs/data-dictionary.md), [class-diagram.md](docs/class-diagram.md) |
 | ‹CLO — behaviour and business-rule modelling› | [use-cases.md](docs/use-cases.md) (fully dressed UC7 with alternate flows), [decision-table.md](docs/decision-table.md) |
 | CLO 3 — ‹project management wording› | [development-notes.md](docs/development-notes.md): re-planning and scope decisions; the commit history |
-| ‹CLO — implementation and testing› | The working system, [api-spec.md](docs/api-spec.md), 54 automated tests |
+| ‹CLO — implementation and testing› | The working system, [api-spec.md](docs/api-spec.md), 440+ automated backend tests and a frontend smoke-test suite |
 
 ## Known limitations and future work
 
 These are deliberate scope decisions for a one-term, administrative-side project, not missing
 pieces of it.
 
-- **No worker mobile app.** Workers are records; supervisors enter time on their behalf.
-  A mobile app for self clock-in is the natural next component.
+- **No worker mobile app and no worker sign-in.** The requirements deliberately limit FieldTrack to the
+  office side ("Workers are managed as records; they do not log in", [requirements.md](docs/requirements.md)),
+  so supervisors enter time on their behalf and workers cannot clock themselves in. Self-service would need:
+  a worker credential and a `Worker`-role token, endpoints that take the worker from the token (never from
+  the request body) and reuse the existing assignment, overlap and geofence rules, and a mobile or
+  phone-friendly client. None of that is half-built; it is a Phase 2 project.
 - **Safety monitoring is simulated and in-memory.** Escalation state and the audit log live in the
-  server process (lost on restart) and advance only while a dashboard is polling the Live Map.
+  server process (lost on restart) and advance only while a dashboard is calling `POST /api/safety/tick`.
 - **No real GPS feed.** Coordinates are entered (or filled by "simulate phone GPS" buttons), and
   the Live Map simulates positions. The API and map are shaped so a real feed could replace the
   simulation without changing the UI.
 - **No payroll integration.** Approved hours export as CSV for import; a direct integration
   with a payroll provider is future work.
-- **Local deployment only.** SQLite and the Flask/Vite development servers suit a single
-  machine. Production would use a managed database, a WSGI server behind HTTPS, a built
-  frontend, and a real `SECRET_KEY` (already supported via environment variables).
-- **No password reset, notifications or multi-company support.**
+- **Local deployment only** — see *Deployment notes* below.
+- **No password reset, notifications or multi-company support.** Passwords are limited to 72 bytes (bcrypt).
 - **Simplified map routing.** Simulated workers follow the real main roads, but routing ignores
   one-way streets and road class.
 - **Map tiles need a key once hosted.** Stadia Maps serves the base map without a key on
   `localhost` only; a deployment needs a free Stadia account registered to its domain.
+
+## Deployment notes
+
+What is verified and what is not, so nobody assumes more than exists.
+
+- **Development (what this repo is tested for):** Flask development server + SQLite file +
+  `npm run dev`. `APP_ENV` defaults to `development`, with a built-in signing key.
+- **Production needs:** `APP_ENV=production` and a random `SECRET_KEY` (startup fails otherwise);
+  a WSGI server (for example gunicorn or waitress) behind HTTPS; `HSTS_ENABLED=1`; `CORS_ORIGINS` set
+  to the real site; `TRUSTED_PROXY_COUNT` set to the number of proxies in front of the app; the built
+  frontend (`npm run build`) served as static files.
+- **Run ONE server process.** Safety state (check-ins, emergencies, the audit log) and the login rate
+  limiter live in the memory of a single process. With several worker processes each keeps its own copy,
+  so a tick on one worker and a resolve on another would disagree and the login limit would be multiplied
+  by the worker count. Use one process (threads are fine) until that state moves to a shared store such as
+  the database or Redis. Do not read the rate limit as process-wide protection otherwise.
+- **Database:** SQLite is fine for one machine and one process. The app creates tables with
+  `create_all` (there are no migrations) and only the SQLite driver is installed; moving to PostgreSQL
+  means adding a driver, testing against it and adding a migration tool. The destructive `seed.py --reset`
+  deliberately refuses non-SQLite databases.
+- **Frontend CSP:** the API sends a locked-down Content-Security-Policy, but the React app is served by
+  whatever hosts the built files, which must set its own (allow scripts and styles from itself, images and
+  connections to the Stadia tile host and to the API origin).
+- **Performance (not verified for production):** on the seeded data every endpoint answered in about
+  2-15 ms (median), with the lazy-loaded Live Map the first page downloads about 99 kB gzipped. Some list
+  endpoints load related rows one at a time (for example crew per job); that is fine at this size and is the
+  first thing to look at if lists grow into the thousands.

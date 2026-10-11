@@ -11,6 +11,7 @@ from validation import (
     get_or_404,
     one_of,
     parse_date,
+    parse_id,
     parse_int,
     require_str,
 )
@@ -33,7 +34,7 @@ def list_jobs():
     status = one_of(request.args.get("status"), "status", "Status", JOB_STATUSES, required=False)
     if status:
         query = query.filter(Job.status == status)
-    site_id = parse_int(request.args.get("site_id"), "site_id", "Site", required=False)
+    site_id = parse_id(request.args.get("site_id"), "site_id", "Site", required=False)
     if site_id:
         query = query.filter(Job.site_id == site_id)
     jobs = query.order_by(Job.scheduled_date.desc(), Job.title).all()
@@ -52,7 +53,7 @@ def get_job(job_id):
 def create_job():
     """Create a job. created_by comes from the JWT, never from the request body."""
     data = get_json()
-    site_id = parse_int(data.get("site_id"), "site_id", "Job site")
+    site_id = parse_id(data.get("site_id"), "site_id", "Job site")
     get_or_404(JobSite, site_id, "Job site", field="site_id")
     job = Job(
         site_id=site_id,
@@ -79,7 +80,7 @@ def update_job(job_id):
     data = get_json()
 
     if "site_id" in data:
-        site_id = parse_int(data["site_id"], "site_id", "Job site")
+        site_id = parse_id(data["site_id"], "site_id", "Job site")
         get_or_404(JobSite, site_id, "Job site", field="site_id")
         job.site_id = site_id
     if "title" in data:

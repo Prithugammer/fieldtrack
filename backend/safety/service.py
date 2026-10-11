@@ -94,6 +94,18 @@ class SafetyService:
             self._last_tick = now
         return state
 
+    def view(self, state, now=None):
+        """Annotate `state` with the CURRENT safety info without advancing anything.
+
+        Read-only: no machine is ticked, no accident is rolled, no reply is delivered and no
+        audit entry is written, so any number of calls leave the safety state exactly as it was.
+        Time-based escalation only moves forward in `process()` (POST /api/safety/tick).
+        """
+        now = self.clock() if now is None else now
+        with self._lock:
+            self._annotate(state, now)
+        return state
+
     def _check_poll_gap(self, now):
         if self._last_tick is None or now - self._last_tick <= self.config.max_poll_gap_seconds:
             return
@@ -161,7 +173,10 @@ class SafetyService:
         workers = state["workers"]
         for w in workers:
             wid = w["id"]
-            machine = self._machines[wid]
+            # A worker nobody has ticked yet has no machine; a detached one reads as NORMAL.
+            machine = self._machines.get(wid) or SafetyMachine(
+                WorkerRef(wid, w["name"]), self.config, self.notifier, self.audit
+            )
             frozen = self._frozen.get(wid)
             w["sim_status"] = w["status"]
             if frozen:

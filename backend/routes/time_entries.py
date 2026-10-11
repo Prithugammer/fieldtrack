@@ -17,7 +17,7 @@ from validation import (
     parse_bool,
     parse_date,
     parse_datetime,
-    parse_int,
+    parse_id,
     parse_latitude,
     parse_longitude,
     require_str,
@@ -79,10 +79,10 @@ def list_time_entries():
     flagged = parse_bool(request.args.get("flagged"), "flagged", "Flagged", required=False)
     if flagged is not None:
         query = query.filter(TimeEntry.is_flagged == flagged)
-    worker = parse_int(request.args.get("worker"), "worker", "Worker", required=False)
+    worker = parse_id(request.args.get("worker"), "worker", "Worker", required=False)
     if worker:
         query = query.filter(TimeEntry.user_id == worker)
-    job_id = parse_int(request.args.get("job_id"), "job_id", "Job", required=False)
+    job_id = parse_id(request.args.get("job_id"), "job_id", "Job", required=False)
     if job_id:
         query = query.filter(TimeEntry.job_id == job_id)
     day = parse_date(request.args.get("date"), "date", "Date", required=False)
@@ -110,8 +110,8 @@ def create_time_entry():
     data = get_json()
 
     # 1. Field validation
-    user_id = parse_int(data.get("user_id"), "user_id", "Worker")
-    job_id = parse_int(data.get("job_id"), "job_id", "Job")
+    user_id = parse_id(data.get("user_id"), "user_id", "Worker")
+    job_id = parse_id(data.get("job_id"), "job_id", "Job")
     clock_in = parse_datetime(data.get("clock_in"), "clock_in", "Clock-in time")
     in_lat = parse_latitude(data.get("in_lat"), "in_lat", "Clock-in latitude")
     in_lng = parse_longitude(data.get("in_lng"), "in_lng", "Clock-in longitude")

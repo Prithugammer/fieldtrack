@@ -3,3 +3,9 @@ line-length = 100
 target-version = ["py310"]
 # black already skips .venv, build and cache folders; also skip the local database folder
 extend-exclude = "instance"
+
+[tool.coverage.run]
+source = ["."]
+# Measure the application, not the tests themselves, the virtualenv or the one-off road-network
+# build script (tools/ needs a downloaded map file and is not part of the running app).
+omit = [".venv/*", "tests/*", "tools/*", "instance/*"]

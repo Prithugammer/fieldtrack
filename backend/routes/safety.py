@@ -1,8 +1,11 @@
 """Safety / emergency actions and the audit log (see safety/ for how escalation works).
 
-The escalation itself runs inside GET /api/map/live (the dashboard's 1 s poll drives it) and
-its alerts come back in that response under "safety". These routes are the controls:
+The escalation is advanced by POST /api/safety/tick (the Live Map's 1 s poll calls it); the
+read-only GET /api/map/live reports the result under "safety". These routes are the controls:
 simulated-worker actions (accident, SOS, "I'm OK", break) and the supervisor's resolution.
+
+Who may do what: every state-changing control is limited to SAFETY_CONTROL_ROLES (Supervisor,
+Admin). A Dispatcher can watch (map, alerts, config, audit log) but cannot change safety state.
 """
 
 import json
@@ -14,9 +17,12 @@ from models import STAFF_ROLES
 from routes.map import compute_live_state
 from safety.machine import OUTCOMES
 from safety.service import SafetyError
-from validation import ApiError, get_json, one_of, parse_bool, require_str
+from validation import ApiError, get_json, one_of, parse_bool, parse_id, require_str
 
 safety_bp = Blueprint("safety", __name__, url_prefix="/api/safety")
+
+# Roles that may change safety state (trigger, respond, break, resolve, return to duty).
+SAFETY_CONTROL_ROLES = ("Supervisor", "Admin")
 
 
 def _service():
@@ -45,8 +51,23 @@ def config():
     return jsonify({**service.config.to_dict(), "seed": service.seed})
 
 
-@safety_bp.post("/workers/<int:user_id>/accident")
+@safety_bp.post("/tick")
 @role_required(*STAFF_ROLES)
+def tick():
+    """Advance the escalation to "now" and return the Live Map state with the new safety info.
+
+    This is what GET /api/map/live used to do as a side effect. It only moves time forward
+    (idle timers, check-in windows, the configured random accident roll); it cannot start,
+    resolve or change an emergency on anyone's say-so, so every staff role may call it.
+    ?route=<user_id> adds that worker's remaining route, like the live-map endpoint.
+    """
+    route = parse_id(request.args.get("route"), "route", "Route", required=False)
+    state = compute_live_state(path_for=route)
+    return jsonify(current_app.extensions["safety"].process(state))
+
+
+@safety_bp.post("/workers/<int:user_id>/accident")
+@role_required(*SAFETY_CONTROL_ROLES)
 def trigger_accident(user_id):
     """Demo control: the worker stops moving and is incapacitated (never answers check-ins)."""
     service = _service()
@@ -55,7 +76,7 @@ def trigger_accident(user_id):
 
 
 @safety_bp.post("/workers/<int:user_id>/sos")
-@role_required(*STAFF_ROLES)
+@role_required(*SAFETY_CONTROL_ROLES)
 def sos(user_id):
     """The worker presses SOS: straight to EMERGENCY."""
     service = _service()
@@ -64,7 +85,7 @@ def sos(user_id):
 
 
 @safety_bp.post("/workers/<int:user_id>/respond")
-@role_required(*STAFF_ROLES)
+@role_required(*SAFETY_CONTROL_ROLES)
 def respond(user_id):
     """The worker answers a check-in with "I'm OK" (from the simulated worker view)."""
     service = _service()
@@ -73,7 +94,7 @@ def respond(user_id):
 
 
 @safety_bp.post("/workers/<int:user_id>/break")
-@role_required(*STAFF_ROLES)
+@role_required(*SAFETY_CONTROL_ROLES)
 def set_break(user_id):
     """Mark a worker on (or back from) a break; idle detection ignores workers on a break."""
     data = get_json()
@@ -84,7 +105,7 @@ def set_break(user_id):
 
 
 @safety_bp.post("/workers/<int:user_id>/resolve")
-@role_required(*STAFF_ROLES)
+@role_required(*SAFETY_CONTROL_ROLES)
 def resolve(user_id):
     """Supervisor closes an emergency: outcome "real_incident" or "false_alarm", optional note."""
     data = get_json()
@@ -96,7 +117,7 @@ def resolve(user_id):
 
 
 @safety_bp.post("/workers/<int:user_id>/return-to-duty")
-@role_required(*STAFF_ROLES)
+@role_required(*SAFETY_CONTROL_ROLES)
 def return_to_duty(user_id):
     """Clear a post-incident worker back to normal monitoring."""
     service = _service()
@@ -109,7 +130,7 @@ def return_to_duty(user_id):
 def audit():
     """The audit log, oldest first. ?format=csv downloads it; ?worker_id= filters one worker."""
     service = current_app.extensions["safety"]
-    worker_id = request.args.get("worker_id", type=int)
+    worker_id = parse_id(request.args.get("worker_id"), "worker_id", "Worker", required=False)
     if request.args.get("format") == "csv":
         body = service.audit.to_csv()
         return Response(
