@@ -241,10 +241,17 @@ export default function LiveMap() {
   const { hasRole } = useAuth()
   const canControl = hasRole('Supervisor', 'Admin')
 
+  // One request at a time: if the server is slow, polls are skipped instead of piling up.
+  const inFlight = useRef(false)
+
   const poll = useCallback(async () => {
+    if (inFlight.current) return
+    inFlight.current = true
     try {
       const [state, sim] = await Promise.all([
-        api('/safety/tick', { method: 'POST', params: { route: selectedRef.current } }),
+        // Read-only: the server advances safety escalation by itself (backend heartbeat), so this
+        // page only observes. Closing it never stops monitoring.
+        api('/map/live', { params: { route: selectedRef.current } }),
         api('/map/sim-clock'),
       ])
       const prev = prevLive.current
@@ -263,6 +270,8 @@ export default function LiveMap() {
       setError(null)
     } catch (err) {
       setError(err)
+    } finally {
+      inFlight.current = false
     }
   }, [])
 
@@ -307,9 +316,9 @@ export default function LiveMap() {
     if (!bounds.data || !live) return null
     const b = bounds.data
     const valley = L.latLngBounds([b.south, b.west], [b.north, b.east])
-    const sites = live.job_sites.length
-      ? L.latLngBounds(live.job_sites.map((s) => [s.lat, s.lng])).pad(0.15)
-      : valley
+    // Sites outside the road network (routable === false) would stretch the view across the globe.
+    const shown = live.job_sites.filter((s) => s.routable !== false)
+    const sites = shown.length ? L.latLngBounds(shown.map((s) => [s.lat, s.lng])).pad(0.15) : valley
     return { start: sites, max: valley.pad(0.25) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bounds.data, live === null])
@@ -330,6 +339,13 @@ export default function LiveMap() {
     { variant: 'emergency', label: 'EMERGENCY', n: count((w) => w.status === 'EMERGENCY') },
   ]
   const notStarted = count((w) => w.status === 'Not started')
+  const unroutableSites = (live?.job_sites || []).filter((s) => s.routable === false)
+  const routeUnavailable = count((w) => w.status === 'Route unavailable')
+  // Is the server really advancing safety escalation? If not, say so instead of showing a calm, stale map.
+  const monitoring = live?.safety?.monitoring
+  const monitoringOff = Boolean(monitoring) && monitoring.background === false
+  const persistenceFailing = monitoring?.persistence?.enabled === true && monitoring.persistence.ok === false
+  const monitoringStale = Boolean(monitoring) && (monitoring.age_s === null || monitoring.age_s > 10)
 
   let body
   if ((bounds.error || error) && !live) {
@@ -476,6 +492,33 @@ export default function LiveMap() {
       <div className="page">
         {error && live && (
           <Alert tone="warning">Lost connection to the server — retrying. {error.message}</Alert>
+        )}
+        {persistenceFailing && (
+          <Alert tone="warning">
+            The server could not save safety events ({monitoring.persistence.unsaved_events} waiting). They
+            are kept in memory and retried every second, but would be lost if the server restarted now.
+          </Alert>
+        )}
+        {monitoringOff && (
+          <Alert tone="warning">
+            Safety monitoring is not running on the server, so check-ins and emergencies will not escalate.
+            Start the backend with <code>python app.py</code> (or <code>wsgi.py</code>) and keep
+            SAFETY_TICKER_ENABLED on.
+          </Alert>
+        )}
+        {!monitoringOff && monitoringStale && (
+          <Alert tone="warning">
+            Safety monitoring has not updated
+            {monitoring.age_s === null ? ' yet' : ` for ${Math.round(monitoring.age_s)} s`}. Alerts on this
+            screen may be out of date.
+          </Alert>
+        )}
+        {unroutableSites.length > 0 && (
+          <Alert tone="warning">
+            {unroutableSites.length === 1 ? '1 job site is' : `${unroutableSites.length} job sites are`}{' '}
+            outside the supported road network ({unroutableSites.map((s) => s.name).join(', ')}). Workers
+            assigned there are not shown on the map ({routeUnavailable} affected).
+          </Alert>
         )}
         {actionError && (
           <Alert tone="error" onClose={() => setActionError(null)}>

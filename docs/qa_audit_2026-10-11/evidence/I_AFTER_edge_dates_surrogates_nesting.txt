@@ -1,0 +1,24 @@
+=== I1: extreme dates in filters (documented format is valid for any real calendar date)
+  time-entries ?date=9999-12-31                        -> 200  
+  time-entries ?date=0001-01-01                        -> 200  
+  reports hours-by-worker ?to=9999-12-31               -> 200  
+  reports hours-by-worker ?from=9999-12-31             -> 400  
+  reports flagged ?from=0001-01-01&to=9999-12-31       -> 200  
+  reports hours.csv ?to=9999-12-31                     -> 200  
+  assignments ?work_date=9999-12-31                    -> 200  
+  jobs ?date=9999-12-31                                -> 200  
+
+=== I2: lone surrogate / deep nesting on text fields that clear the minimum-length rules
+  job title              -> 400  
+  site name              -> 400  
+  user full_name         -> 400  
+  user trade             -> 400  
+  approve edit_reason    -> 400  
+  login email            -> 400  
+  safety resolve note    -> 400  
+  login, 60,000 nested '[' (unauthenticated)  -> 400
+  login, 3,000 nested '['                      -> 400
+  login, 400 nested '['                        -> 400
+
+=== I3: valid creation proof for numeric-string / float ids (regression check for preserved client behavior)
+  user_id as string, job_id as '<n>.0' (string), lat/lng as strings -> 400 Job must be a whole number.

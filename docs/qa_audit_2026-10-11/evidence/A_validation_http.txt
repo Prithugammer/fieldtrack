@@ -1,0 +1,137 @@
+﻿=== A1: POST /api/time-entries, bad value in user_id / job_id (raw JSON literals)
+  user_id  2**63-1 (valid range, no such row) -> 404 field=user_id 
+  user_id  2**63                              -> 400 field=user_id 
+  user_id  -(2**63)                           -> 400 field=user_id 
+  user_id  -(2**63)-1                         -> 400 field=user_id 
+  user_id  30-digit int                       -> 400 field=user_id 
+  user_id  1e999                              -> 400 field=user_id 
+  user_id  -1e999                             -> 400 field=user_id 
+  user_id  NaN literal                        -> 400 field=user_id 
+  user_id  Infinity literal                   -> 400 field=user_id 
+  user_id  -Infinity literal                  -> 400 field=user_id 
+  user_id  zero                               -> 400 field=user_id 
+  user_id  negative                           -> 400 field=user_id 
+  user_id  null                               -> 400 field=user_id 
+  user_id  string 'abc'                       -> 400 field=user_id 
+  user_id  string '5' (numeric string)        -> 409 field=clock_in 
+  user_id  string '9'*30                      -> 400 field=user_id 
+  user_id  string '1e999'                     -> 400 field=user_id 
+  user_id  string '1.5'                       -> 400 field=user_id 
+  user_id  float 5.0                          -> 409 field=clock_in 
+  user_id  float 1.5                          -> 400 field=user_id 
+  user_id  true                               -> 400 field=user_id 
+  user_id  [1]                                -> 400 field=user_id 
+  user_id  {}                                 -> 400 field=user_id 
+  user_id  5000-digit int                     -> 400 field=None 
+  job_id   2**63-1 (valid range, no such row) -> 404 field=job_id 
+  job_id   2**63                              -> 400 field=job_id 
+  job_id   -(2**63)                           -> 400 field=job_id 
+  job_id   -(2**63)-1                         -> 400 field=job_id 
+  job_id   30-digit int                       -> 400 field=job_id 
+  job_id   1e999                              -> 400 field=job_id 
+  job_id   -1e999                             -> 400 field=job_id 
+  job_id   NaN literal                        -> 400 field=job_id 
+  job_id   Infinity literal                   -> 400 field=job_id 
+  job_id   -Infinity literal                  -> 400 field=job_id 
+  job_id   zero                               -> 400 field=job_id 
+  job_id   negative                           -> 400 field=job_id 
+  job_id   null                               -> 400 field=job_id 
+  job_id   string 'abc'                       -> 400 field=job_id 
+  job_id   string '5' (numeric string)        -> 409 field=user_id 
+  job_id   string '9'*30                      -> 400 field=job_id 
+  job_id   string '1e999'                     -> 400 field=job_id 
+  job_id   string '1.5'                       -> 400 field=job_id 
+  job_id   float 5.0                          -> 409 field=user_id 
+  job_id   float 1.5                          -> 400 field=job_id 
+  job_id   true                               -> 400 field=job_id 
+  job_id   [1]                                -> 400 field=job_id 
+  job_id   {}                                 -> 400 field=job_id 
+  job_id   5000-digit int                     -> 400 field=None 
+A1       PASS     500s=0; DB fingerprint unchanged by invalid requests: True
+=== A1b: the numeric-string / float forms that ARE valid must still work
+  user_id as numeric string '5' -> 409 (201 expected: preserved client behavior)
+  user_id as float 5.0 -> 409 (409 overlap with previous is fine; 400/500 would be a regression) Overlaps entry #15 for Ramesh Karki (2026-10-11 07:00 – stil
+=== A2: URL path ids
+  23-digit     statuses for 8 endpoints: [404, 404, 404, 404, 404, 404, 404, 404]  
+  2**63        statuses for 8 endpoints: [404, 404, 404, 404, 404, 404, 404, 404]  
+  2**63-1      statuses for 8 endpoints: [404, 404, 404, 404, 404, 404, 404, 404]  
+  zero         statuses for 8 endpoints: [404, 404, 404, 404, 404, 404, 404, 404]  
+  negative     statuses for 8 endpoints: [404, 404, 404, 404, 404, 404, 404, 404]  
+  letters      statuses for 8 endpoints: [404, 404, 404, 404, 404, 404, 404, 404]  
+  float        statuses for 8 endpoints: [404, 404, 404, 404, 404, 404, 404, 404]  
+  5000 digits  statuses for 8 endpoints: [404, 405, 404, 404, 404, 404, 404, 404]  
+=== A3: query-string filters
+  jobs ?site_id=2**63            -> 400 field=site_id
+  jobs ?site_id=0                -> 400 field=site_id
+  jobs ?site_id=-1               -> 400 field=site_id
+  jobs ?site_id=1e999            -> 400 field=site_id
+  jobs ?site_id=nan              -> 400 field=site_id
+  jobs ?site_id=                 -> 200 field=None
+  jobs ?site_id=1 (valid)        -> 200 field=None
+  entries ?worker=2**63          -> 400 field=worker
+  entries ?job_id=999..9 (30)    -> 400 field=job_id
+  entries ?worker=abc            -> 400 field=worker
+  assign ?user_id=0              -> 400 field=user_id
+  audit ?worker_id=2**63         -> 400 field=worker_id
+  map ?route=2**63               -> 400 field=route
+  map ?route=abc                 -> 400 field=route
+  map ?route=1 (valid)           -> 200 field=None
+  tick ?route=1e999              -> 400 field=route
+=== A4: foreign keys in bodies; DB must be unchanged after rejections
+  POST /api/jobs site_id=2**63             -> 400 site_id
+  POST /api/jobs site_id=99999             -> 404 site_id
+  POST /api/assignments job_id=-1          -> 400 job_id
+  POST /api/assignments user_id=2**63      -> 400 user_id
+  PATCH /api/jobs/1 site_id=1e30           -> 400 site_id
+  DB fingerprint unchanged: True
+=== A5: crew_size / radius / lat / lng non-finite and huge
+  crew_size          1e999                    -> 400 Crew size must be a whole number.
+  crew_size          -1e999                   -> 400 Crew size must be a whole number.
+  crew_size          NaN                      -> 400 Crew size must be a whole number.
+  crew_size          9223372036854775808      -> 400 Crew size is out of range.
+  crew_size          "7"                      -> 200 
+  crew_size          7.0                      -> 200 
+  crew_size          7.5                      -> 400 Crew size must be a whole number.
+  crew_size          null                     -> 400 Crew size is required.
+  geofence_radius_m  1e999                    -> 400 Geofence radius must be a whole number.
+  geofence_radius_m  -1e999                   -> 400 Geofence radius must be a whole number.
+  geofence_radius_m  NaN                      -> 400 Geofence radius must be a whole number.
+  geofence_radius_m  9223372036854775808      -> 400 Geofence radius is out of range.
+  geofence_radius_m  "7"                      -> 400 Geofence radius must be at least 25.
+  geofence_radius_m  7.0                      -> 400 Geofence radius must be at least 25.
+  geofence_radius_m  7.5                      -> 400 Geofence radius must be a whole number.
+  geofence_radius_m  null                     -> 400 Geofence radius is required.
+  latitude 1e999        -> 400 Latitude must be a number.
+  latitude NaN          -> 400 Latitude must be a number.
+  latitude -Infinity    -> 400 Latitude must be a number.
+  latitude "inf"        -> 400 Latitude must be a number.
+  latitude "nan"        -> 400 Latitude must be a number.
+  latitude "1e999"      -> 400 Latitude must be a number.
+=== A6: dates (parse_date) - documented format is YYYY-MM-DD
+  ?date='2026-10-01'               -> 200
+  ?date=' 2026-10-01 '             -> 200
+  ?date='20261001'                 -> 400
+  ?date='2026-W40-4'               -> 400
+  ?date='2026-1-1'                 -> 400
+  ?date='2026-10-01T00:00'         -> 400
+  ?date='2026-02-30'               -> 400
+  ?date='0000-01-01'               -> 400
+  ?date='9999-12-31'               -> 200
+  ?date='Ù¢Ù\xa0Ù¢Ù¦-Ù¡Ù\xa0-Ù\xa0Ù¡' -> 400
+  ?date='2026-10-01\\u0000'        -> 400
+  ?date='null'                     -> 400
+  ?date='20261001'                 -> 400
+  ?date='1234567'                  -> 400
+  body scheduled_date=20261001 (int) -> 400
+  body scheduled_date=9999-12-31 -> 201 (accepted far-future date: no business range check)
+  body scheduled_date=0001-01-01 -> 201
+=== A7: datetimes
+  clock_in='2026-10-01T07:00'             -> 409 Ramesh Karki is not assigned to 'Level 4 framing' on 2026-10-01. Assig
+  clock_in='2026-10-01 07:00'             -> 409 Ramesh Karki is not assigned to 'Level 4 framing' on 2026-10-01. Assig
+  clock_in='2026-10-01T07:00:00Z'         -> 409 Ramesh Karki is not assigned to 'Level 4 framing' on 2026-10-01. Assig
+  clock_in='2026-10-01T07:00:00+05:45'    -> 409 Ramesh Karki is not assigned to 'Level 4 framing' on 2026-10-01. Assig
+  clock_in='2026-10-01'                   -> 409 Ramesh Karki is not assigned to 'Level 4 framing' on 2026-10-01. Assig
+  clock_in='20261001T0700'                -> 409 Ramesh Karki is not assigned to 'Level 4 framing' on 2026-10-01. Assig
+  clock_in='0001-01-01T00:00'             -> 409 Ramesh Karki is not assigned to 'Level 4 framing' on 0001-01-01. Assig
+  clock_in='9999-12-31T23:59'             -> 409 Ramesh Karki is not assigned to 'Level 4 framing' on 9999-12-31. Assig
+  clock_in='2026-10-01T24:00'             -> 400 Clock-in time must be a date and time like 2026-10-01T07:00.

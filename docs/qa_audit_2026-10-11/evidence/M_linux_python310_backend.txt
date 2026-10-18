@@ -1,0 +1,15 @@
+Python 3.10.22
+Linux 6.18.33.2-microsoft-standard-WSL2
+[notice] A new release of pip is available: 23.0.1 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+No broken requirements found.
+54 files would be left unchanged.
+compileall-ok
+FAILED tests/test_map_robustness.py::test_supported_routes_are_unchanged_by_the_fix[8-site0-5a6f152eca1d2bc115a5a02370f367995f5b9e01]
+FAILED tests/test_map_robustness.py::test_supported_routes_are_unchanged_by_the_fix[5-site1-0444b15ee383008464771e49c9e914093898e44c]
+FAILED tests/test_map_robustness.py::test_supported_routes_are_unchanged_by_the_fix[12-site2-f796f95b8340c8b6fe57472432568735bb2216d4]
+FAILED tests/test_map_robustness.py::test_supported_routes_are_unchanged_by_the_fix[9-site3-7924d1f877456ff06fc4e603b2dc2e88aadf25b0]
+FAILED tests/test_map_robustness.py::test_supported_routes_are_unchanged_by_the_fix[6-site4-701f4ccada76e3fab93ec59c9c0b2b77a85791c6]
+FAILED tests/test_map_robustness.py::test_supported_routes_are_unchanged_by_the_fix[7-site5-6030f27be9cdb02d6b9c4b90301af338765f25b9]
+FAILED tests/test_validation.py::test_parse_datetime_refuses_time_zones_and_garbage
+8 failed, 668 passed in 122.79s (0:02:02)

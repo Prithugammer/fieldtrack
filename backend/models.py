@@ -9,9 +9,11 @@ time they are needed, so they can never drift out of sync with the times.
 
 from datetime import datetime
 
+import hashlib
+
 import bcrypt
 from flask import current_app, has_app_context
-from sqlalchemy import CheckConstraint, UniqueConstraint
+from sqlalchemy import CheckConstraint, Index, UniqueConstraint, text
 
 from extensions import db
 from geofence import haversine, should_flag
@@ -20,6 +22,7 @@ ROLES = ("Admin", "Dispatcher", "Supervisor", "Worker")
 STAFF_ROLES = ("Admin", "Dispatcher", "Supervisor")
 JOB_STATUSES = ("Scheduled", "In progress", "Completed")
 ENTRY_STATUSES = ("Pending", "Approved", "Rejected")
+OPEN_ENTRY_INDEX = "uq_time_entries_one_open_per_worker"
 
 
 def _in_list(column, values):
@@ -71,6 +74,41 @@ class User(db.Model):
         if len(data) > 72:  # can never match a bcrypt hash; avoids bcrypt's ValueError
             return False
         return bcrypt.checkpw(data, self.password_hash.encode("utf-8"))
+
+    _dummy_hashes = {}  # bcrypt cost -> hash of a throw-away value, made once per cost
+
+    @classmethod
+    def _dummy_hash(cls, rounds):
+        if rounds not in cls._dummy_hashes:
+            cls._dummy_hashes[rounds] = bcrypt.hashpw(
+                b"fieldtrack-timing-pad", bcrypt.gensalt(rounds)
+            )
+        return cls._dummy_hashes[rounds]
+
+    @classmethod
+    def burn_password_check(cls, plain):
+        """Spend the same bcrypt time as a real password check, for logins with nothing to compare.
+
+        An unknown email (or an account with no password) would otherwise fail instantly while a
+        known one takes ~0.2 s, which lets anyone find out which emails have accounts by timing the
+        response. Always returns False. Passwords over 72 bytes skip the work exactly like
+        `check_password` does, so known and unknown emails stay alike there too.
+        """
+        rounds = current_app.config.get("BCRYPT_ROUNDS", 12) if has_app_context() else 12
+        data = (plain or "").encode("utf-8")
+        if len(data) <= 72:
+            bcrypt.checkpw(data, cls._dummy_hash(rounds))
+        return False
+
+    def session_stamp(self):
+        """A short fingerprint of the current password hash, carried inside every login token.
+
+        When the password changes the fingerprint changes, so tokens issued before the change stop
+        working at once (they would otherwise live for their full lifetime). No database column is
+        needed; the stamp reveals nothing useful about the hash.
+        """
+        material = (self.password_hash or "").encode("utf-8")
+        return hashlib.sha256(b"fieldtrack-session:" + material).hexdigest()[:16]
 
     def can_log_in(self):
         return self.is_active and self.role in STAFF_ROLES and self.password_hash is not None
@@ -206,6 +244,15 @@ class TimeEntry(db.Model):
     __tablename__ = "time_entries"
     __table_args__ = (
         CheckConstraint(_in_list("status", ENTRY_STATUSES), name="ck_time_entries_status"),
+        # A worker can be clocked in only once at a time: at most one entry without a clock-out.
+        # The API checks overlaps first (friendly message); this index guarantees the open-entry
+        # case even if two requests, or a script, write at the same instant.
+        Index(
+            OPEN_ENTRY_INDEX,
+            "user_id",
+            unique=True,
+            sqlite_where=text("clock_out IS NULL"),
+        ),
     )
 
     entry_id = db.Column(db.Integer, primary_key=True)

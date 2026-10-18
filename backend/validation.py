@@ -38,8 +38,16 @@ class ApiError(Exception):
 
 
 def get_json():
-    """Return the request body as a dict, or raise 400 if it isn't a JSON object."""
-    data = request.get_json(silent=True)
+    """Return the request body as a dict, or raise 400 if it isn't a JSON object.
+
+    Malformed JSON, a wrong content type, text in a bad encoding and absurdly deep nesting are all
+    the client's mistake (400). An over-long body never gets this far: Flask answers 413 as soon as
+    the body is read (MAX_CONTENT_LENGTH).
+    """
+    try:
+        data = request.get_json(silent=True)
+    except RecursionError:  # the parser ran out of stack on something like "[[[[[[ ... (thousands)"
+        raise ApiError("Request body is nested too deeply.") from None
     if not isinstance(data, dict):
         raise ApiError("Request body must be a JSON object.")
     return data
@@ -57,6 +65,10 @@ def require_str(value, field, label, min_len=1, max_len=255, required=True):
         return None
     if not isinstance(value, str):
         raise ApiError(f"{label} must be text.", field)
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:  # e.g. a lone surrogate such as "\ud800": valid JSON, not valid text
+        raise ApiError(f"{label} contains characters that are not allowed.", field) from None
     value = value.strip()
     if len(value) < min_len:
         raise ApiError(f"{label} must be at least {min_len} characters.", field)
@@ -162,11 +174,21 @@ def parse_datetime(value, field, label, required=True):
             raise ApiError(f"{label} is required.", field)
         return None
     try:
-        parsed = datetime.fromisoformat(str(value).strip())
+        text = str(value).strip()
+        if text[-1:] in (
+            "Z",
+            "z",
+        ):  # Python 3.10 cannot parse a trailing Z; 3.11+ can, so normalise
+            text = text[:-1] + "+00:00"
+        parsed = datetime.fromisoformat(text)
     except ValueError:
         raise ApiError(f"{label} must be a date and time like 2026-10-01T07:00.", field)
     if parsed.tzinfo is not None:
-        parsed = parsed.replace(tzinfo=None)
+        # Times are local site time with no zone. Silently dropping "+05:45" or "Z" would store a
+        # different moment than the client meant, so a zone is refused instead.
+        raise ApiError(
+            f"{label} must not include a time zone (use local time like 2026-10-01T07:00).", field
+        )
     return parsed.replace(microsecond=0)
 
 
@@ -225,4 +247,7 @@ def get_or_404(model, record_id, label, field=None):
 def day_bounds(day):
     """Return (start, end) datetimes covering one calendar day: [00:00, next day 00:00)."""
     start = datetime.combine(day, time.min)
-    return start, start + timedelta(days=1)
+    try:
+        return start, start + timedelta(days=1)
+    except OverflowError:  # day == date.max: there is no "next day", so the window runs to the end
+        return start, datetime.max

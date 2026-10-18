@@ -1,0 +1,159 @@
+﻿=== B1: authorization matrix while an EMERGENCY exists on worker 101 (rows=role, cols=action, tick)
+role                    accident        sos             respond         break           resolve         return-to-duty  tick
+none                    401             401             401             401             401             401             401
+worker(forged token)    403             403             403             403             403             403             403
+dispatcher              403             403             403             403             403             403             200
+  every control refused for unauthorised roles: True 
+  safety state byte-identical after 18 denied mutation attempts: True
+  worker 101 still EMERGENCY: EMERGENCY
+=== B2: authorised roles - full flow per role (fresh worker each)
+  admin: sos=201; sos again=409; return-to-duty (not post-incident)=409; resolve bogus outcome=400; resolve real=200; resolve again=409; return-to-duty=200; break on=200; break on again (idempotent)=200; break bad body=400; respond (no checkin)=200; unknown worker 99999=404; worker id 0=404
+python.exe : 127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+At line:1 char:855
++ ... rojects\FieldTrack\backend"; & $py "$sp\probe_bc_run.py" 2>&1 | Where ...
++                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (127.0.0.1 - - [...HTTP/1.1" 200 -:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+  supervisor: sos=201; sos again=409; return-to-duty (not post-incident)=409; resolve bogus outcome=400; resolve real=200; resolve again=409; return-to-duty=200; break on=200; break on again (idempotent)=200; break bad body=400; respond (no checkin)=200; unknown worker 99999=404; worker id 0=404
+=== B3: read access by role (GET)
+  none                     config/audit/live/sim-clock/bounds = [401, 401, 401, 401, 401]
+  worker(forged token)     config/audit/live/sim-clock/bounds = [403, 403, 403, 403, 403]
+  dispatcher               config/audit/live/sim-clock/bounds = [200, 200, 200, 200, 200]
+  supervisor               config/audit/live/sim-clock/bounds = [200, 200, 200, 200, 200]
+  admin                    config/audit/live/sim-clock/bounds = [200, 200, 200, 200, 200]
+=== B4: every mutating route under /api/safety and /api/map, dispatcher token
+  GET   /api/map/bounds                          dispatcher -> 200
+  GET   /api/map/live                            dispatcher -> 200
+  GET   /api/map/sim-clock                       dispatcher -> 200
+  GET   /api/safety/audit                        dispatcher -> 200
+  GET   /api/safety/config                       dispatcher -> 200
+  POST  /api/safety/tick                         dispatcher -> 200
+  POST  /api/safety/workers/<int:user_id>/accident dispatcher -> 403
+  POST  /api/safety/workers/<int:user_id>/break  dispatcher -> 403
+  POST  /api/safety/workers/<int:user_id>/resolve dispatcher -> 403
+  POST  /api/safety/workers/<int:user_id>/respond dispatcher -> 403
+  POST  /api/safety/workers/<int:user_id>/return-to-duty dispatcher -> 403
+  POST  /api/safety/workers/<int:user_id>/sos    dispatcher -> 403
+
+=== C1: GET /api/map/live is observational (50 polls, real clock)
+  safety internals identical: True | DB fingerprint identical: True
+  response keys: ['job_sites', 'safety', 'workers'] | safety keys: ['alerts', 'config', 'notifications', 'privacy_note', 'seed']
+  GET reflects state made by POST controls: worker101 status = EMERGENCY | alerts = [101]
+
+=== C2: GET with accident_probability=1 must not roll accidents; POST tick may
+  ACCIDENT audit entries: before=0 after 10 GETs=0 after 1 tick=0
+
+=== C3: concurrency over real HTTP (threaded server): 8 clients x 40 ticks vs sequential reference
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:08] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 403 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 403 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 403 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+127.0.0.1 - - [11/Oct/2026 12:40:09] "POST /api/safety/tick HTTP/1.1" 200 -
+[2026-10-11 12:40:09,500] ERROR in app: (sqlite3.InterfaceError) bad parameter or other API misuse
+[SQL: SELECT users.user_id, users.full_name, users.email, users.password_hash, users.phone, users.role, users.trade, 
+users.is_active 
+FROM users 
+WHERE users.user_id = ?]
+[parameters: (4,)]
+(Background on this error at: https://sqlalche.me/e/21/rvf5)
+Traceback (most recent call last):
+  File "<user-home>\OneDrive\Desktop\Old 
+Projects\FieldTrack\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1943, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "<user-home>\OneDrive\Desktop\Old 
+Projects\FieldTrack\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 1192, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.InterfaceError: bad parameter or other API misuse
+

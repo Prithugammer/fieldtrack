@@ -12,12 +12,15 @@
   --color-navy-600: #2a3b63;
   --color-orange: #ff7a00;
   --color-orange-600: #e56d00;
+  /* Text on the orange primary button. White on #ff7a00 is only 2.61:1; navy is 6.11:1 (4.96:1 on the
+     hover shade), so the brand orange stays and the label is dark. Same in the light and dark themes. */
+  --color-on-orange: #14213d;
 
   /* Neutrals */
   --color-white: #ffffff;
   --color-bg: #f4f5f7;
   --color-text: #1a1a1a;
-  --color-muted: #6b7280;
+  --color-muted: #636b79; /* 4.9:1 on the page and card backgrounds (was #6b7280, 4.43:1) */
   --color-border: #e5e7eb;
   --color-row-hover: #f9fafb;
 
@@ -29,6 +32,7 @@
 
   /* Status */
   --color-green: #1b9e4b;
+  --color-green-600: #16803c; /* white text on this is 5.0:1 (on --color-green only 3.5:1) */
   --color-amber: #f5a623;
   --color-red: #d33a3a;
 

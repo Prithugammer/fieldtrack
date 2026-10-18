@@ -1,0 +1,14 @@
+﻿E   AssertionError: two stored entries overlap
+<repo>\backend\tests\test_concurrency.py:235: AssertionError: two stored entries overlap
+E   AssertionError: {201: 7, 409: 1}
+<repo>\backend\tests\test_concurrency.py:317: AssertionError: {201: 7, 409: 1}
+E   AssertionError: {201: 10}
+<repo>\backend\tests\test_concurrency.py:317: AssertionError: {201: 10}
+E   AssertionError: (1, {201: 2})
+<repo>\backend\tests\test_concurrency.py:338: AssertionError: (1, {201: 2})
+FAILED tests/test_concurrency.py::test_overlapping_closed_entries_are_never_both_stored
+FAILED tests/test_concurrency.py::test_simultaneous_clock_outs_and_decisions_apply_exactly_once
+FAILED tests/test_concurrency.py::test_capacity_boundaries_under_simultaneous_requests[3-8]
+FAILED tests/test_concurrency.py::test_capacity_boundaries_under_simultaneous_requests[4-10]
+FAILED tests/test_concurrency.py::test_repeated_trials_of_the_last_place_race
+5 failed, 3 passed, 13 deselected in 5.42s

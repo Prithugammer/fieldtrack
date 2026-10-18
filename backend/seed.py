@@ -369,15 +369,37 @@ def main(argv=None, app=None, prompt=None):
     if prompt is None and sys.stdin.isatty():
         prompt = input
 
-    app = app or create_app()
-    with app.app_context():
-        try:
+    try:
+        if app is None:
+            # Decide whether a reset is allowed BEFORE the app (and its database connection) exists,
+            # so a wrong DATABASE_URL is refused without ever touching that database.
+            if args.reset:
+                from config import Config
+
+                check_reset_allowed(
+                    {
+                        "APP_ENV": Config.APP_ENV,
+                        "SQLALCHEMY_DATABASE_URI": Config.SQLALCHEMY_DATABASE_URI,
+                    },
+                    args.yes,
+                    prompt,
+                )
+            app = create_app()
+        with app.app_context():
             if args.reset:
                 check_reset_allowed(app.config, args.yes, prompt)
             seed(reset=args.reset)
-        except SeedRefused as err:
-            print(err, file=sys.stderr)
-            return 1
+    except SeedRefused as err:
+        print(err, file=sys.stderr)
+        return 1
+    except Exception as err:  # noqa: BLE001 - e.g. missing database driver or an unreachable path
+        # Only the error type is shown: messages can contain the database URL (and its password).
+        print(
+            f"Could not open or write the database ({type(err).__name__}). "
+            "Check DATABASE_URL and that the folder exists and is writable.",
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 

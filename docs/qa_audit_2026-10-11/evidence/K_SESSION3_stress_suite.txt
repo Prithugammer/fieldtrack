@@ -1,0 +1,69 @@
+FieldTrack stress suite | Python 3.13.9 | 12 logical CPUs | temp dir <user-home>\AppData\Local\Temp\fieldtrack_stress_kbdgldaa
+Every request has a timeout; no data outside the temp dir is touched.
+
+
+=== 1. Live Map: normal site vs unsupported sites, and isolation of everything else
+  GET /api/map/live, normal (Kirtipur area)      n=101  statuses={200: 101}  median     6.7 ms  p95    11.1  max   156.9
+  [PASS] map: normal (Kirtipur area) terminates quickly, no 5xx first request 157 ms
+  GET /api/map/live, Pokhara (~140 km, valid input) n=101  statuses={200: 101}  median     6.9 ms  p95    10.5  max    29.3
+  [PASS] map: Pokhara (~140 km, valid input) terminates quickly, no 5xx first request 26 ms
+  GET /api/map/live, lat 0 / lng 0               n=101  statuses={200: 101}  median     6.0 ms  p95     7.3  max    23.1
+  [PASS] map: lat 0 / lng 0 terminates quickly, no 5xx first request 7 ms
+  GET /api/map/live, south-east corner (-90, 180) n=101  statuses={200: 101}  median     6.5 ms  p95    24.2  max    30.5
+  [PASS] map: south-east corner (-90, 180) terminates quickly, no 5xx first request 6 ms
+  while 6 threads hammer the map (site at 0,0): API n=60   statuses={200: 60}  median    31.7 ms  p95   121.6  max   149.5
+  while 6 threads hammer the map: safety tick/SOS n=20   statuses={200: 15, 409: 5}  median    38.2 ms  p95    47.5  max    56.3
+  [PASS] isolation: unrelated API calls and safety endpoints answered under map load max 149 ms; 536 map requests served meanwhile
+  [PASS] isolation: no map request failed or timed out 
+  [PASS] database integrity after the map section integrity_check=ok, foreign_key_check rows=0
+
+=== 2. Race conditions: simultaneous clock-ins and crew assignments
+  12 simultaneous identical clock-ins            n=12   statuses={201: 1, 409: 11}  median    87.9 ms  p95   172.2  max   203.9
+  [PASS] clock-in race: exactly one stored 201x1, rows stored=1
+  [PASS] crew race: 20 trials, two workers for the last place overfilled in 0 trial(s)
+  crew capacity 3, 8 simultaneous assignments    n=8    statuses={201: 3, 409: 5}  median    59.2 ms  p95   128.8  max   128.8
+  [PASS] capacity boundary 3/8 stored 3, 201x3
+  crew capacity 4, 10 simultaneous assignments   n=10   statuses={409: 6, 201: 4}  median    73.1 ms  p95   203.5  max   203.5
+  [PASS] capacity boundary 4/10 stored 4, 201x4
+  [PASS] database integrity after the race section integrity_check=ok, foreign_key_check rows=0
+
+=== 3. Concurrent ticks + heartbeat: no event is advanced twice
+  POST /api/safety/tick, 8 clients + heartbeat per second n=480  statuses={200: 480}  median    36.9 ms  p95    57.5  max    93.2
+  [PASS] ticks: audit trail identical to the sequential run 22 events, 480 concurrent requests
+  [PASS] ticks: exactly one EMERGENCY per stationary worker, no duplicates 101:1 102:1 103(moving):0
+
+=== 4. Oversized and deeply nested request bodies
+  2 MB body (limit 1 MB) x25 -> POST /auth/login n=25   statuses={413: 25}  median     4.3 ms  p95    21.8  max    23.1
+  [PASS] body: 2 MB body (limit 1 MB) -> 4xx only {413: 25}
+  3,000-deep array x25 -> POST /auth/login       n=25   statuses={400: 25}  median     4.6 ms  p95     6.3  max    26.5
+  [PASS] body: 3,000-deep array -> 4xx only {400: 25}
+  60,000-deep array x25 -> POST /auth/login      n=25   statuses={400: 25}  median     4.2 ms  p95    16.0  max    23.7
+  [PASS] body: 60,000-deep array -> 4xx only {400: 25}
+  lone surrogate in email x25 -> POST /auth/login n=25   statuses={400: 25}  median     3.3 ms  p95     4.1  max     4.1
+  [PASS] body: lone surrogate in email -> 4xx only {400: 25}
+  5,000-digit integer x25 -> POST /auth/login    n=25   statuses={400: 25}  median     2.6 ms  p95     3.4  max     4.4
+  [PASS] body: 5,000-digit integer -> 4xx only {400: 25}
+  [PASS] body: the server is still healthy afterwards 
+  [PASS] extreme date /api/time-entries?date=9999-12-31 -> 200
+  [PASS] extreme date /api/reports/hours-by-worker?to=9999-12-31 -> 200
+  [PASS] extreme date /api/reports/hours.csv?from=0001-01-01&to=9999-12-31 -> 200
+
+=== 5. Repeated login failures and throttling (window shortened to 3 s so recovery can be shown)
+  30 wrong passwords for one account             n=30   statuses={401: 5, 429: 25}  median     4.2 ms  p95     9.9  max    11.1
+  [PASS] throttle: 5 x 401 then 429 {401: 5, 429: 25}
+  [PASS] throttle: the right password is also refused while blocked 
+  [PASS] throttle: sign-in works again after the window 
+
+=== 6. Backend start-up with valid and invalid production configuration
+  [PASS] startup: development, nothing set -> starts
+  [PASS] startup: production without SECRET_KEY -> refuses (config.ConfigError: SECRET_KEY must be set in production. Generate one with: python -c "im)
+  [PASS] startup: production, placeholder key -> refuses (config.ConfigError: SECRET_KEY is a placeholder value; set a real random secret in product)
+  [PASS] startup: production, 40-char random key -> starts
+  [PASS] startup: production, strong key, tick interval 0 -> refuses (config.ConfigError: SAFETY_TICK_INTERVAL_SECONDS must be at least 0.05.)
+  [PASS] startup: unknown APP_ENV -> refuses (config.ConfigError: APP_ENV must be one of: development, test, production.)
+
+=== 7. A REAL server process with no client: does safety escalation still advance? (about 50 s)
+  [PASS] real process: only /api/health was requested before the audit was read 1 request(s) logged
+  [PASS] real process: idle detection, 3 check-ins and an EMERGENCY happened with no client connected {'IDLE_DETECTED': 1, 'CHECKIN_SENT': 3, 'SUPERVISOR_ALERT': 2, 'CHECKIN_UNANSWERED': 3, 'EMERGENCY': 1, 'EMERGENCY_CALL': 1}
+
+SUMMARY: 34 passed, 0 failed (temp dir removed)

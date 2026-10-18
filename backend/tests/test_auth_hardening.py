@@ -3,7 +3,7 @@
 import pytest
 
 from app import create_app
-from config import DEV_SECRET_KEY, ConfigError
+import config  # looked up dynamically: other tests reload this module, which replaces its classes
 from extensions import db
 from models import User
 from security import LoginRateLimiter
@@ -145,11 +145,15 @@ def test_limiter_unit_behaviour_and_memory_bound():
     assert lim.retry_after("a@x.io", "1.1.1.1") == 0
     lim.record_failure("A@x.io", "1.1.1.1")
     lim.record_failure("a@x.io", "1.1.1.1")  # case-insensitive account key
-    assert lim.retry_after("a@x.io", "2.2.2.2") == 60
+    assert (
+        lim.retry_after("a@x.io", "1.1.1.1") == 60
+    )  # the guessing address is blocked for that account
+    assert lim.retry_after("a@x.io", "2.2.2.2") == 0  # the owner, elsewhere, is not (D-13)
+    assert lim.retry_after("other@x.io", "1.1.1.1") == 0
     now["t"] = 59.2
-    assert lim.retry_after("a@x.io", "2.2.2.2") == 1
+    assert lim.retry_after("a@x.io", "1.1.1.1") == 1
     now["t"] = 61
-    assert lim.retry_after("a@x.io", "2.2.2.2") == 0
+    assert lim.retry_after("a@x.io", "1.1.1.1") == 0
     LoginRateLimiter.MAX_KEYS, saved = 50, LoginRateLimiter.MAX_KEYS
     try:
         for i in range(500):
@@ -163,22 +167,29 @@ def test_limiter_unit_behaviour_and_memory_bound():
 
 
 def test_production_refuses_to_start_without_a_secret(monkeypatch):
-    with pytest.raises(ConfigError, match="SECRET_KEY must be set"):
+    with pytest.raises(config.ConfigError, match="SECRET_KEY must be set"):
         create_app({**FAKE_PRODUCTION, "SECRET_KEY": None})
 
 
 @pytest.mark.parametrize(
     "secret",
-    [DEV_SECRET_KEY, "change-me", "short-secret", "x" * 31, "Please-CHANGE-ME-" + "a" * 30, ""],
+    [
+        config.DEV_SECRET_KEY,
+        "change-me",
+        "short-secret",
+        "x" * 31,
+        "Please-CHANGE-ME-" + "a" * 30,
+        "",
+    ],
 )
 def test_production_rejects_weak_or_placeholder_secrets(secret):
-    with pytest.raises(ConfigError) as err:
+    with pytest.raises(config.ConfigError) as err:
         create_app({**FAKE_PRODUCTION, "SECRET_KEY": secret})
     assert secret not in str(err.value) or secret == ""  # the message never echoes the key
 
 
 def test_production_checks_a_separate_jwt_key_too():
-    with pytest.raises(ConfigError, match="JWT_SECRET_KEY"):
+    with pytest.raises(config.ConfigError, match="JWT_SECRET_KEY"):
         create_app({**FAKE_PRODUCTION, "SECRET_KEY": GOOD_SECRET, "JWT_SECRET_KEY": "weak"})
 
 
@@ -196,18 +207,16 @@ def test_development_keeps_working_without_any_secret():
             "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
         }
     )
-    assert app.config["SECRET_KEY"] == DEV_SECRET_KEY
+    assert app.config["SECRET_KEY"] == config.DEV_SECRET_KEY
 
 
 def test_a_mistyped_environment_name_does_not_fall_back_to_development():
-    with pytest.raises(ConfigError, match="APP_ENV"):
+    with pytest.raises(config.ConfigError, match="APP_ENV"):
         create_app({"APP_ENV": "prod", "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"})
 
 
 def test_config_numbers_from_the_environment_are_validated(monkeypatch):
     import importlib
-
-    import config
 
     monkeypatch.setenv("LOGIN_MAX_FAILURES_PER_ACCOUNT", "notanumber")
     with pytest.raises(RuntimeError, match="LOGIN_MAX_FAILURES_PER_ACCOUNT"):
@@ -339,3 +348,32 @@ def test_set_password_refuses_more_than_72_bytes(app):
     with pytest.raises(ValueError):
         User().set_password("x" * 73)
     assert not User(password_hash=None).check_password("x")
+
+
+def test_a_stranger_cannot_lock_the_real_owner_out_but_a_distributed_guesser_is_still_stopped(
+    client, app, clock
+):
+    """D-13: failures from one address block that address for the account, not the owner elsewhere."""
+    limit = app.config["LOGIN_MAX_FAILURES_PER_ACCOUNT"]
+    for _ in range(limit + 2):
+        assert bad_login(
+            client, "super@test.com", environ_overrides={"REMOTE_ADDR": "203.0.113.9"}
+        ).status_code in (401, 429)
+    attacker = bad_login(client, "super@test.com", environ_overrides={"REMOTE_ADDR": "203.0.113.9"})
+    assert attacker.status_code == 429
+    owner = client.post(
+        "/api/auth/login",
+        json={"email": "super@test.com", "password": PASSWORD},
+        environ_overrides={"REMOTE_ADDR": "198.51.100.4"},
+    )
+    assert owner.status_code == 200  # not locked out
+    total = app.config["LOGIN_MAX_FAILURES_PER_ACCOUNT_TOTAL"]
+    codes = [
+        bad_login(
+            client, "dispatch@test.com", environ_overrides={"REMOTE_ADDR": f"192.0.2.{i}"}
+        ).status_code
+        for i in range(total + 3)
+    ]
+    assert codes[:total] == [401] * total and set(codes[total:]) == {
+        429
+    }  # rotating addresses hit the account ceiling

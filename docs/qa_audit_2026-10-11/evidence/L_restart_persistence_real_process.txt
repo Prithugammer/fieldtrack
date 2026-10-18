@@ -1,0 +1,21 @@
+1. start the backend; no client will talk to it
+2/3. the heartbeat raised an emergency by itself and saved it (read straight from the file)
+  [PASS] an EMERGENCY row exists in the database workers=[(5, 'EMERGENCY'), (6, 'EMERGENCY'), (7, 'EMERGENCY'), (9, 'EMERGENCY')]
+  [PASS] exactly one EMERGENCY audit event per emergency worker {'IDLE_DETECTED': 4, 'CHECKIN_SENT': 12, 'SUPERVISOR_ALERT': 8, 'CHECKIN_UNANSWERED': 12, 'EMERGENCY': 4, 'EMERGENCY_CALL': 4}
+4. hard-kill the process and start it again on the same file
+  [PASS] the emergency is still in the file while the server is dead 
+  [PASS] 5. after the restart the API shows the same emergency alerts=[5, 6, 7, 9] status=EMERGENCY
+  [PASS]    history from before the kill is still in the audit log 
+  [PASS]    no second emergency or duplicate events were created worker 5: {'IDLE_DETECTED': 1, 'CHECKIN_SENT': 3, 'SUPERVISOR_ALERT': 2, 'CHECKIN_UNANSWERED': 3, 'EMERGENCY': 1, 'EMERGENCY_CALL': 1}
+  [PASS]    monitoring reports persistence ok and the heartbeat running 
+6. permissions and resolution after the restart
+  [PASS]    Dispatcher cannot resolve it (403) 
+  [PASS]    no token: 401 
+  [PASS]    Supervisor resolves it (real incident) 
+  [PASS]    the resolution is saved (state POST_INCIDENT, RESOLVED event) [(5, 'POST_INCIDENT'), (6, 'EMERGENCY'), (7, 'EMERGENCY'), (9, 'EMERGENCY')]
+7. kill again: the resolved state must persist and nothing re-escalates
+  [PASS]    still POST-incident after the second restart status=Post-incident
+  [PASS]    the resolved worker did not re-escalate (EMERGENCY events for it unchanged) worker 5 EMERGENCY events 1 -> 1
+  [PASS]    return-to-duty works and removes the saved row 
+
+SUMMARY: 14 passed, 0 failed (temp dir removed)

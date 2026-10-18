@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy.exc import IntegrityError
 
 from auth import role_required
+from concurrency import begin_write
 from extensions import db
 from models import STAFF_ROLES, Assignment, Job, TimeEntry, User
 from validation import ApiError, day_bounds, get_json, get_or_404, parse_date, parse_id
@@ -52,6 +53,9 @@ def create_assignment():
     data = get_json()
     job_id = parse_id(data.get("job_id"), "job_id", "Job")
     user_id = parse_id(data.get("user_id"), "user_id", "Worker")
+    # Everything below (crew full? double-booked?) reads rows and then writes one: take the write
+    # lock first so two simultaneous requests cannot both pass the checks (see concurrency.py).
+    begin_write()
     job = get_or_404(Job, job_id, "Job", field="job_id")
     worker = get_or_404(User, user_id, "Worker", field="user_id")
 

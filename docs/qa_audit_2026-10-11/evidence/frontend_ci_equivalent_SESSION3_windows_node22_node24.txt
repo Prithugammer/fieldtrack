@@ -1,0 +1,38 @@
+﻿##### node22 : v22.22.2
+--- prettier --check .
+Checking formatting...
+All matched files use Prettier code style!
+--- vitest run
+   ✓ Time Entries page > lets a Supervisor record, and approve or reject a completed entry  300ms
+   ✓ Time Entries page > requires a reason to approve, then sends the decision and the reason  614ms
+
+ Test Files  8 passed (8)
+      Tests  78 passed (78)
+   Start at  16:37:45
+   Duration  37.41s (transform 1.12s, setup 45.36s, collect 13.96s, tests 17.08s, environment 178.08s, prepare 6.31s)
+
+--- vite build
+<scratch>/dist_node22/assets/index-ScKQ0oZ5.css     18.82 kB │ gzip:  4.10 kB
+<scratch>/dist_node22/assets/LiveMap-BXfLFbda.css   22.54 kB │ gzip:  8.03 kB
+<scratch>/dist_node22/assets/LiveMap-dOtRIIsK.js   173.42 kB │ gzip: 51.28 kB
+<scratch>/dist_node22/assets/index-Dw0RhPDD.js     322.34 kB │ gzip: 98.87 kB
+✓ built in 2.50s
+##### node24 : v24.17.0
+--- prettier --check .
+Checking formatting...
+All matched files use Prettier code style!
+--- vitest run
+   ✓ Crew page > shows an inline error when the server rejects a duplicate email  566ms
+   ✓ Time Entries page > requires a reason to approve, then sends the decision and the reason  575ms
+
+ Test Files  8 passed (8)
+      Tests  78 passed (78)
+   Start at  16:38:28
+   Duration  9.38s (transform 1.13s, setup 8.09s, collect 3.44s, tests 14.99s, environment 16.94s, prepare 1.41s)
+
+--- vite build
+<scratch>/dist_node24/assets/index-ScKQ0oZ5.css     18.82 kB │ gzip:  4.10 kB
+<scratch>/dist_node24/assets/LiveMap-BXfLFbda.css   22.54 kB │ gzip:  8.03 kB
+<scratch>/dist_node24/assets/LiveMap-dOtRIIsK.js   173.42 kB │ gzip: 51.28 kB
+<scratch>/dist_node24/assets/index-Dw0RhPDD.js     322.34 kB │ gzip: 98.87 kB
+✓ built in 1.65s

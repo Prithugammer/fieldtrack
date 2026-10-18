@@ -1,0 +1,185 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.9, pytest-9.1.1, pluggy-1.6.0
+rootdir: <repo>\backend
+configfile: pytest.ini
+testpaths: tests
+plugins: platformdirs-4.12.3, cov-7.1.0
+collected 444 items
+
+tests\test_assignments_entries_api.py .................................. [  7%]
+..........                                                               [  9%]
+tests\test_auth_hardening.py ..................................          [ 17%]
+tests\test_jobs_api.py ....................................              [ 25%]
+tests\test_map.py ...........                                            [ 28%]
+tests\test_rules.py ...................                                  [ 32%]
+tests\test_safety.py ................................                    [ 39%]
+tests\test_safety_authz.py .........................                     [ 45%]
+tests\test_security.py ...........................                       [ 51%]
+tests\test_seed.py ................                                      [ 54%]
+tests\test_users_api.py ..................................               [ 62%]
+tests\test_validation.py ............................................... [ 73%]
+........................................................................ [ 89%]
+...............................................                          [100%]
+
+============================== warnings summary ===============================
+tests/test_auth_hardening.py::test_a_deleted_account_token_is_refused
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py:1611: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EB6637B50>
+    kw.update(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_jobs_api.py::test_jobs_are_listed_newest_date_first
+  <user-home>\anaconda3\Lib\weakref.py:575: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EB688D300>
+    info = self._Info()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_jobs_api.py::test_jobs_are_listed_newest_date_first
+  <user-home>\anaconda3\Lib\weakref.py:575: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EB688EF20>
+    info = self._Info()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_jobs_api.py::test_jobs_are_listed_newest_date_first
+  <user-home>\anaconda3\Lib\weakref.py:575: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EB688C7C0>
+    info = self._Info()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_map.py::test_routes_never_zig_zag
+  <repo>\backend\.venv\Lib\site-packages\coverage\collector.py:236: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EB6636E30>
+    def lock_data(self) -> None:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_seed.py::test_cli_reset_with_prompt_and_production_refusal
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py:496: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBBA106D0>
+    return iter(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_users_api.py::test_invalid_user_fields_are_rejected_without_creating_anything[changes8-password]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\crud.py:590: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EB6D76890>
+    if dml.isupdate(compile_state) and compile_state._extra_froms:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_users_api.py::test_invalid_user_fields_are_rejected_without_creating_anything[changes8-password]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\crud.py:590: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EB5B0F4C0>
+    if dml.isupdate(compile_state) and compile_state._extra_froms:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_users_api.py::test_invalid_user_fields_are_rejected_without_creating_anything[changes8-password]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\crud.py:590: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBB7A26B0>
+    if dml.isupdate(compile_state) and compile_state._extra_froms:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_users_api.py::test_invalid_user_fields_are_rejected_without_creating_anything[changes8-password]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\crud.py:590: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBB925990>
+    if dml.isupdate(compile_state) and compile_state._extra_froms:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_users_api.py::test_invalid_user_fields_are_rejected_without_creating_anything[changes8-password]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\crud.py:590: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBBA105E0>
+    if dml.isupdate(compile_state) and compile_state._extra_froms:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_users_api.py::test_invalid_user_fields_are_rejected_without_creating_anything[changes8-password]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\crud.py:590: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBBA10C70>
+    if dml.isupdate(compile_state) and compile_state._extra_froms:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_users_api.py::test_invalid_user_fields_are_rejected_without_creating_anything[changes8-password]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\crud.py:590: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBBA11210>
+    if dml.isupdate(compile_state) and compile_state._extra_froms:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_users_api.py::test_invalid_user_fields_are_rejected_without_creating_anything[changes8-password]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\crud.py:590: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBBA117B0>
+    if dml.isupdate(compile_state) and compile_state._extra_froms:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_users_api.py::test_invalid_user_fields_are_rejected_without_creating_anything[changes8-password]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\crud.py:590: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBBA118A0>
+    if dml.isupdate(compile_state) and compile_state._extra_froms:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_users_api.py::test_invalid_user_fields_are_rejected_without_creating_anything[changes8-password]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\crud.py:590: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBBA11E40>
+    if dml.isupdate(compile_state) and compile_state._extra_froms:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_users_api.py::test_invalid_user_fields_are_rejected_without_creating_anything[changes8-password]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\crud.py:590: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBBC3B100>
+    if dml.isupdate(compile_state) and compile_state._extra_froms:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_validation.py::test_bad_ids_in_query_filters_are_400[/api/assignments-user_id-x]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\type_api.py:2468: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EB6D6ED40>
+    pass
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_validation.py::test_bad_ids_in_query_filters_are_400[/api/assignments-user_id-x]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\type_api.py:2468: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBA7495D0>
+    pass
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_validation.py::test_bad_ids_in_query_filters_are_400[/api/assignments-user_id-x]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\type_api.py:2468: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBB894400>
+    pass
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_validation.py::test_bad_ids_in_query_filters_are_400[/api/assignments-user_id-x]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\type_api.py:2468: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBB9DBF10>
+    pass
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_validation.py::test_bad_ids_in_query_filters_are_400[/api/assignments-user_id-x]
+  <repo>\backend\.venv\Lib\site-packages\sqlalchemy\sql\type_api.py:2468: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x0000025EBBB45300>
+    pass
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.9-final-0 _______________
+
+Name                    Stmts   Miss Branch BrPart  Cover   Missing
+-------------------------------------------------------------------
+app.py                     75      8     12      2    86%   35->37, 106-108, 134-139
+auth.py                    54      1     18      1    97%   85->87, 103
+extensions.py              13      0      2      1    93%   17->exit
+models.py                 151      4     14      1    97%   76, 160->170, 244-245, 315
+roads.py                   76      0     34      2    98%   79->90, 105->104
+routes\assignments.py      69      3     22      0    97%   99-102
+routes\dashboard.py        31      0     10      2    95%   26->25, 35->34
+routes\reports.py          78      3     22      3    94%   68, 70, 100
+routes\safety.py           85      1      4      1    98%   143
+routes\sites.py            41      0     10      1    98%   69->71
+safety\behaviour.py        31      1      2      0    97%   40
+safety\config.py           66      2     12      2    95%   81, 83
+safety\machine.py         151      2     46      2    98%   63, 141, 164->166
+safety\notifier.py         46      0      2      1    98%   16->24
+safety\service.py         233      6     72      8    95%   57, 260, 305->exit, 316, 326->330, 328, 338, 346
+seed.py                   156      2     28      2    98%   370, 385
+simulation.py             172      4     48      3    97%   308->exit, 374-376, 380
+validation.py             153      1     74      1    99%   177
+-------------------------------------------------------------------
+TOTAL                    2162     38    556     33    97%
+
+11 files skipped due to complete coverage.
+====================== 444 passed, 22 warnings in 59.37s ======================

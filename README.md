@@ -78,12 +78,13 @@ instant.
 |-------|------------|
 | Backend | Python 3.10+, Flask 3, Flask-SQLAlchemy, Flask-JWT-Extended, Flask-CORS, bcrypt, python-dotenv, SQLite |
 | Frontend | React 19, Vite, react-router-dom, Leaflet + react-leaflet with Stadia Maps tiles (English labels), plain CSS with design tokens (light and dark themes) |
-| Quality | pytest (440+ tests, 98% coverage), Vitest, black, Prettier, GitHub Actions CI |
+| Quality | pytest (630+ tests, ~98% line coverage), Vitest (70 tests), black, Prettier, GitHub Actions CI |
 | Docs | Markdown + Mermaid diagrams in `docs/` |
 
 ## Setup
 
-Requires **Python 3.10+** and **Node.js 20+**. Use two terminals, both starting in the project
+Requires **Python 3.10+** (suite run locally on 3.10, 3.12 and 3.13 on Linux, and on 3.13 on Windows; the CI matrix covers the same three) and **Node.js 22.22.2+ or 24.15+** (the test tooling's
+DOM, jsdom 30, cannot load on Node 20; `npm ci` warns if your Node is too old). Use two terminals, both starting in the project
 folder.
 
 ### Terminal 1 — backend
@@ -150,6 +151,11 @@ Nothing needs configuring to run locally. To change a setting, copy `backend/.en
 | `APP_ENV` | `development` | `development`, `test` or `production`. **Production refuses to start** without a strong `SECRET_KEY` (≥ 32 characters, not a placeholder) and refuses `FLASK_DEBUG=1`. A mistyped value is an error, never a silent fallback |
 | `SECRET_KEY` / `JWT_SECRET_KEY` | a built-in key, **development only** | Signs login tokens. Required in production — generate with `python -c "import secrets; print(secrets.token_hex(32))"` |
 | `LOGIN_MAX_FAILURES_PER_ACCOUNT` / `_PER_CLIENT` / `LOGIN_RATE_WINDOW_SECONDS` | `5` / `20` / `300` | Failed logins allowed per window before HTTP 429 |
+| `SAFETY_PERSISTENCE` | on | Save safety state in the database (restored at start-up) |
+| `LOGIN_MAX_FAILURES_PER_ACCOUNT_TOTAL` | `25` | Failures for one email from all addresses together before HTTP 429 (the per-address limit stays 5) |
+| `SAFETY_TICKER_ENABLED` / `SAFETY_TICK_INTERVAL_SECONDS` | on / `1` | The backend heartbeat that advances safety escalation (started by `python app.py` and `wsgi.py`, never by tests) |
+| `MAX_REQUEST_BYTES` | `1048576` | Largest request body (HTTP 413 above it) |
+| `SQLITE_BUSY_TIMEOUT_SECONDS` | `10` | How long a database write waits for another write before the API answers 503 `Retry-After: 1` |
 | `TRUSTED_PROXY_COUNT` | `0` | Reverse proxies to trust for the client address (needed for correct rate limiting behind a proxy) |
 | `HSTS_ENABLED` | off | Send `Strict-Transport-Security` (only over HTTPS) |
 | `DATABASE_URL` | `sqlite:///fieldtrack.db` | Database location |
@@ -166,7 +172,7 @@ The frontend reads `VITE_API_URL` (default `http://127.0.0.1:5000`) — see
 ```bash
 cd backend
 pip install -r requirements-dev.txt
-pytest                           # 440+ tests
+pytest                           # 630+ tests
 pytest --cov                     # with a coverage report (CI requires >= 85%)
 black --check .
 
@@ -207,8 +213,11 @@ The Live Map also watches every simulated worker for trouble. A worker who is **
 an EMERGENCY that only a supervisor can close. Every state-changing safety control (trigger an
 accident, SOS, "I'm OK", break, resolve, return to duty) is limited to **Supervisors and Admins** by the
 server; a Dispatcher can watch the map, alerts and audit log but gets HTTP 403 on any control.
-The Live Map is read-only over `GET /api/map/live`; the page advances the escalation with
-`POST /api/safety/tick` once a second. Everything is simulated: nobody is called or
+**Escalation is advanced by the backend, not by browsers.** A heartbeat thread started by `python app.py`
+(or `wsgi.py`) computes the Live Map state and feeds the safety state machine once a second, so check-ins and
+emergencies keep escalating with every browser tab closed. The Live Map page only *reads* (`GET /api/map/live`),
+and warns on screen if the server says monitoring is not running or has gone stale.
+`POST /api/safety/tick` still exists as a manual "advance now" for tests and tooling. Everything is simulated: nobody is called or
 texted (the notifier is a mock, see below).
 
 ```
@@ -332,7 +341,7 @@ How the project provides evidence for the PRG 100 course learning outcomes (CLOs
 | ‹CLO — process and data modelling› | [dfd.md](docs/dfd.md), [erd.md](docs/erd.md), [data-dictionary.md](docs/data-dictionary.md), [class-diagram.md](docs/class-diagram.md) |
 | ‹CLO — behaviour and business-rule modelling› | [use-cases.md](docs/use-cases.md) (fully dressed UC7 with alternate flows), [decision-table.md](docs/decision-table.md) |
 | CLO 3 — ‹project management wording› | [development-notes.md](docs/development-notes.md): re-planning and scope decisions; the commit history |
-| ‹CLO — implementation and testing› | The working system, [api-spec.md](docs/api-spec.md), 440+ automated backend tests and a frontend smoke-test suite |
+| ‹CLO — implementation and testing› | The working system, [api-spec.md](docs/api-spec.md), 630+ automated backend tests and 70 frontend tests |
 
 ## Known limitations and future work
 
@@ -345,8 +354,12 @@ pieces of it.
   a worker credential and a `Worker`-role token, endpoints that take the worker from the token (never from
   the request body) and reuse the existing assignment, overlap and geofence rules, and a mobile or
   phone-friendly client. None of that is half-built; it is a Phase 2 project.
-- **Safety monitoring is simulated and in-memory.** Escalation state and the audit log live in the
-  server process (lost on restart) and advance only while a dashboard is calling `POST /api/safety/tick`.
+- **Safety monitoring is simulated; its open state is durable.** Check-ins, emergencies, post-incident holds, the
+  audit log and the message feed are saved in the database after every change and restored when the server starts
+  (`SAFETY_PERSISTENCE`, default on), so a crash or restart does not lose an emergency. Not saved: idle time a
+  worker had built up *before* check-in 1 (that timer restarts). While the server is down nothing escalates, and
+  there is no external watchdog. Escalation does not need a browser (backend heartbeat), only a running server.
+  Retention of audit records is an open decision (requirements §7.3).
 - **No real GPS feed.** Coordinates are entered (or filled by "simulate phone GPS" buttons), and
   the Live Map simulates positions. The API and map are shaped so a real feed could replace the
   simulation without changing the UI.
@@ -369,11 +382,25 @@ What is verified and what is not, so nobody assumes more than exists.
   a WSGI server (for example gunicorn or waitress) behind HTTPS; `HSTS_ENABLED=1`; `CORS_ORIGINS` set
   to the real site; `TRUSTED_PROXY_COUNT` set to the number of proxies in front of the app; the built
   frontend (`npm run build`) served as static files.
-- **Run ONE server process.** Safety state (check-ins, emergencies, the audit log) and the login rate
-  limiter live in the memory of a single process. With several worker processes each keeps its own copy,
-  so a tick on one worker and a resolve on another would disagree and the login limit would be multiplied
-  by the worker count. Use one process (threads are fine) until that state moves to a shared store such as
-  the database or Redis. Do not read the rate limit as process-wide protection otherwise.
+- **Run ONE server process.** Safety state is now saved in the database, and only the process holding the database
+  lease runs the heartbeat, but each process still keeps its own working copy and its own login rate limiter, so a
+  second process would serve stale map/alert data and multiply the login limit. With several worker processes each would keep its
+  own copy and run its own heartbeat, so alerts would disagree and the login limit would be multiplied by the
+  worker count. Use one process (threads are fine), e.g. `gunicorn -w 1 --threads 4 wsgi:app` (an example only: no production WSGI server has been tested with this project), until that state
+  moves to a shared store such as the database or Redis. Do not read the rate limit as process-wide
+  protection otherwise.
+- **Concurrent writes (SQLite).** "No overlapping clock-ins" and "crew not full" are check-then-write rules. The
+  routes that enforce them take SQLite's write lock first (`BEGIN IMMEDIATE`, see `backend/concurrency.py`), which
+  works across threads *and* processes, and a partial unique index guarantees one open entry per worker. A write
+  that cannot get the lock within `SQLITE_BUSY_TIMEOUT_SECONDS` returns HTTP 503 (`Retry-After: 1`) without
+  changing anything. Another database would need row locks instead; none is supported today.
+- **Request limits and a reverse proxy.** The app refuses bodies over `MAX_REQUEST_BYTES` (413) and malformed,
+  over-nested or non-UTF-8 input (400). Put the same limit in front of it as well (for example nginx
+  `client_max_body_size 1m;`) so oversized requests never reach Python.
+- **Live Map coverage.** Routes are simulated on the committed Kathmandu Valley road network. A job site more
+  than 5 km from any road point (see `MAX_SNAP_M` in `backend/roads.py`) is *unsupported*: it stays in the data
+  and on the site list, the API still accepts it, but its workers are shown as "Route unavailable" and the map
+  warns instead of hanging.
 - **Database:** SQLite is fine for one machine and one process. The app creates tables with
   `create_all` (there are no migrations) and only the SQLite driver is installed; moving to PostgreSQL
   means adding a driver, testing against it and adding a migration tool. The destructive `seed.py --reset`

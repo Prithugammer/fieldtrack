@@ -1,16 +1,28 @@
 name: CI
 
+# Runs on every push to any branch and on every pull request, so feature branches are checked
+# before they are merged (the first version only ran for `main`, which meant it never ran at all).
 on:
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # README promises Python 3.10+. Each of these was also run locally on Linux (Docker) before CI existed.
+        python-version: ["3.10", "3.12", "3.13"]
     defaults:
       run:
         working-directory: backend
@@ -18,10 +30,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: backend/requirements-dev.txt
       - run: pip install -r requirements-dev.txt
+      - run: pip check
+      - name: Byte-compile (catches syntax errors in files no test imports)
+        run: python -m compileall -q . -x "(\.venv|instance)"
       - name: Formatting (black)
         run: black --check .
       - name: Tests with coverage
@@ -32,14 +47,22 @@ jobs:
     defaults:
       run:
         working-directory: frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        # jsdom 30 (the test DOM) requires Node ^22.22.2 || ^24.15.0 || >=26; Node 20 cannot load it.
+        node-version: ["22", "24"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+      - name: Show versions (the engines field is checked by npm ci)
+        run: node --version && npm --version
+      - name: Clean install from the lockfile
+        run: npm ci
       - name: Formatting (prettier)
         run: npm run format:check
       - name: Tests (vitest)

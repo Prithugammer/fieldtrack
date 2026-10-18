@@ -16,8 +16,18 @@ ROADS_FILE = os.path.join(
 )
 CELL_DEG = 0.005  # nearest-node lookup grid, roughly 500 m squares
 
+# Routing only makes sense near the road network. A point farther than this from every road
+# point is "unsupported": it gets no route (RouteUnavailable / None) instead of an open-ended
+# search. 5 km comfortably covers every site in and around the Valley (the committed network
+# spans roughly lat 27.59-27.84, lng 85.16-85.48) while keeping the lookup to ~20 x 20 cells.
+MAX_SNAP_M = 5_000
+
 _KY = 111_195  # metres per degree of latitude
 _KX = _KY * math.cos(math.radians(27.7))  # metres per degree of longitude in the valley
+
+
+class RouteUnavailable(Exception):
+    """A point is outside the road network's coverage, so no route can be drawn to or from it."""
 
 
 def _metres(a, b):
@@ -47,14 +57,47 @@ def _network():
     return coords, adj, grid
 
 
-def nearest_node(lat, lng):
-    """Index of the road point closest to (lat, lng)."""
+def _usable(lat, lng):
+    """True for a pair of finite, in-range numbers (anything else can never be routed)."""
+    try:
+        return math.isfinite(lat) and math.isfinite(lng) and -90 <= lat <= 90 and -180 <= lng <= 180
+    except TypeError:
+        return False
+
+
+@lru_cache(maxsize=1)
+def _coverage():
+    """Bounding box of the road network, widened by MAX_SNAP_M: (south, north, west, east)."""
+    coords = _network()[0]
+    lats = [p[0] for p in coords]
+    lngs = [p[1] for p in coords]
+    return (
+        min(lats) - MAX_SNAP_M / _KY,
+        max(lats) + MAX_SNAP_M / _KY,
+        min(lngs) - MAX_SNAP_M / _KX,
+        max(lngs) + MAX_SNAP_M / _KX,
+    )
+
+
+def nearest_node(lat, lng, max_distance_m=MAX_SNAP_M):
+    """Index of the road point closest to (lat, lng), or None if none is within max_distance_m.
+
+    The search is bounded in both directions: a point outside the network's (widened) bounding
+    box is rejected in O(1), and otherwise at most ~(max_distance_m / cell) rings are scanned,
+    so it always terminates quickly whatever the input (far away, NaN, infinite, out of range).
+    """
+    if not _usable(lat, lng):
+        return None
+    south, north, west, east = _coverage()
+    if not (south <= lat <= north and west <= lng <= east):
+        return None
     coords, _, grid = _network()
     ci, cj = _cell((lat, lng))
+    max_ring = int(max_distance_m // (CELL_DEG * _KX)) + 2
     best, ring = None, 0
     # Search outward ring by ring; once something is found, one more ring settles ties
     # across cell edges.
-    while True:
+    while ring <= max_ring:
         for i in range(ci - ring, ci + ring + 1):
             for j in range(cj - ring, cj + ring + 1):
                 if max(abs(i - ci), abs(j - cj)) != ring:
@@ -64,8 +107,17 @@ def nearest_node(lat, lng):
                     if best is None or d < best[0]:
                         best = (d, n)
         if best and best[0] < ring * CELL_DEG * _KX:
-            return best[1]
+            break
         ring += 1
+    if best is None or best[0] > max_distance_m:
+        return None
+    return best[1]
+
+
+@lru_cache(maxsize=2048)
+def is_routable(lat, lng):
+    """True if (lat, lng) is close enough to the road network to be routed to."""
+    return nearest_node(lat, lng) is not None
 
 
 @lru_cache(maxsize=4096)
@@ -97,9 +149,12 @@ def road_path(points):
     """Drive through `points` in order along the roads; returns the list of road points.
 
     Each point is first snapped to its nearest road point, so the result starts and ends on
-    a road (callers add any short walk off the road themselves).
+    a road (callers add any short walk off the road themselves). Raises RouteUnavailable if a
+    point is outside the network's coverage.
     """
     nodes = [nearest_node(*p) for p in points]
+    if any(n is None for n in nodes):
+        raise RouteUnavailable("A route point is outside the supported road network.")
     out = [_network()[0][nodes[0]]]
     for a, b in zip(nodes, nodes[1:]):
         if a != b:
@@ -108,5 +163,8 @@ def road_path(points):
 
 
 def snap(lat, lng):
-    """The road point nearest to (lat, lng)."""
-    return _network()[0][nearest_node(lat, lng)]
+    """The road point nearest to (lat, lng). Raises RouteUnavailable if there is none nearby."""
+    node = nearest_node(lat, lng)
+    if node is None:
+        raise RouteUnavailable("The point is outside the supported road network.")
+    return _network()[0][node]

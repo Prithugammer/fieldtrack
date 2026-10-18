@@ -105,3 +105,34 @@ keep the diagram readable. UC13 shows simulated positions until a mobile app sup
 - **BR-2 Geofence rule:** distance > radius ⇒ flag; entries are *never* discarded for location — the supervisor decides.
 - **BR-3 Computed hours:** hours are never stored; they are computed from clock-in and clock-out.
 - **BR-4 Audit:** every decision stores who made it and why.
+
+---
+
+## UC14 — Monitor workers and handle a safety emergency (added 2026-10-11)
+
+*Written from the implemented behaviour; see requirements FR-14 … FR-24. Roles and open decisions: requirements §7.*
+
+| Item | Description |
+|------|-------------|
+| **Actors** | Supervisor or Admin (acts), Dispatcher (watches), the server heartbeat (automatic), the simulated worker |
+| **Precondition** | At least one worker is assigned today and shown on the Live Map; the server is running with the heartbeat on |
+| **Trigger** | A worker on shift stops moving, or a Supervisor presses SOS / Trigger accident in the demo |
+| **Postcondition** | The incident is resolved with an outcome and note in the audit log, or remains open and visible |
+
+### Main flow
+1. The server sees a worker on shift stay within 15 m for the idle threshold and sends check-in 1 and a supervisor warning.
+2. The worker does not answer; after each window check-in 2 and 3 follow.
+3. After the last window the server declares EMERGENCY: critical alert, a **mock** call, status EMERGENCY. All of this is saved.
+4. A Supervisor opens the Live Map, sees the alert (location, nearest available co-worker, elapsed time), and chooses *Resolved - false alarm* or *Resolved - real incident* with an optional note.
+5. For a real incident the worker is held *Post-incident*; later a Supervisor presses *Return to duty*.
+
+### Alternate flows
+| Ref | Condition | Handling |
+|-----|-----------|----------|
+| 2a | The worker answers "I'm OK" or starts moving | The check-in is cleared and idle timing restarts. |
+| 3a | **The server restarts** after step 1 or 3 | State is restored; the schedule continues; nothing is repeated. |
+| 3b | The database cannot be written | Memory keeps the state; the Live Map warns; each second the save is retried. |
+| 4a | A Dispatcher tries to resolve | 403; nothing changes. |
+| 4b | The resolution cannot be saved | 503 "could not be saved"; the emergency stays open. |
+| 4c | Two supervisors resolve at once | One succeeds; the other gets 409 "not in an emergency". |
+| \*a | The job site is outside the supported road network | The worker is shown as "Route unavailable" and is not monitored; a warning is shown. |

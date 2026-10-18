@@ -1,0 +1,17 @@
+﻿Real server process (python app.py), demo thresholds: idle 15 s + 3 x 5 s windows = 30 s.
+Server started 14:30:43 with a heartbeat; between 14:30:43 and this query the access log contains ONLY: GET /api/health (no map, no safety request, no browser).
+Audit log read afterwards (oldest first):
+
+08:45:58  worker 5   IDLE_DETECTED      No movement for 15 s while on shift.
+08:45:58  worker 5   CHECKIN_SENT       Check-in 1 of 3 sent.
+08:45:58  worker 5   SUPERVISOR_ALERT   Warning sent to the supervisor.
+08:46:03  worker 5   CHECKIN_UNANSWERED Check-in 1 was not answered in time.
+08:46:03  worker 5   CHECKIN_SENT       Check-in 2 of 3 sent.
+08:46:08  worker 5   CHECKIN_UNANSWERED Check-in 2 was not answered in time.
+08:46:08  worker 5   CHECKIN_SENT       Check-in 3 of 3 sent.
+08:46:13  worker 5   CHECKIN_UNANSWERED Check-in 3 was not answered in time.
+08:46:13  worker 5   EMERGENCY          Worker status set to EMERGENCY (three unanswered check-ins).
+08:46:13  worker 5   SUPERVISOR_ALERT   Critical alert sent to the supervisor.
+08:46:13  worker 5   EMERGENCY_CALL     MOCK call placed to emergency services (no real call made).
+
+GET /api/map/live -> safety.monitoring = {"age_s":0.2,"background":true,"last_tick_at":"2026-10-11T08:47:04.815135+00:00"}

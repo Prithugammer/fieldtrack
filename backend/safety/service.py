@@ -11,8 +11,12 @@ which the Live Map calls on every poll with the freshly computed state. It then:
   * adds a "safety" block (alerts, notifications) and per-worker safety info to the state.
 """
 
+import copy
+import json
+import logging
 import threading
 import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 
 from geofence import haversine
@@ -33,6 +37,9 @@ PRIVACY_NOTE = (
     "they were flagged (the check-in message states the reason), and every safety event is "
     "recorded in the audit log."
 )
+
+
+log = logging.getLogger("fieldtrack.safety")
 
 
 class SafetyError(Exception):
@@ -80,6 +87,167 @@ class SafetyService:
         self._plans = {}  # worker_id -> (checkin key, reply time or None)
         self._seen = {}  # worker_id -> latest pre-freeze Live Map entry
         self._last_tick = None
+        # Durability (see store.py). `store` is None for a purely in-memory service (unit tests).
+        self.store = None
+        self._saved = {}  # worker_id -> JSON text last written for that worker
+        self._audit_saved = 0  # highest audit id already in the database
+        self._notes_saved = 0
+        self.persist_errors = 0
+        self.last_persist_error = None
+        self.restored = {"workers": 0, "audit": 0}
+
+    # ----- durability -----
+
+    def attach_store(self, store):
+        """Use `store` for durability and restore whatever it holds (call once, at start-up)."""
+        self.store = store
+        self.reload()
+
+    def reload(self):
+        """Replace the in-memory safety state with what the database holds."""
+        data = self.store.load()
+        with self._lock:
+            self._machines.clear()
+            self._incapacitated.clear()
+            self._frozen.clear()
+            self._on_break.clear()
+            self._plans.clear()
+            self._saved.clear()
+            self.audit._items.clear()
+            self.notifier.feed.clear()
+            self.audit.load(data["audit"])
+            self.audit.reset_ids(data["max_audit_id"] + 1)
+            self.notifier.load(data["notifications"])
+            self.notifier._next_id = max(self.notifier._next_id, data["max_note_id"] + 1)
+            for wid, (name, blob) in data["workers"].items():
+                self._decode(wid, name, blob)
+                self._saved[wid] = self._encode(wid, self._machines[wid])[1]
+            self._audit_saved = data["max_audit_id"]
+            self._notes_saved = data["max_note_id"]
+            self.restored = {"workers": len(data["workers"]), "audit": len(data["audit"])}
+        if data["workers"]:
+            log.warning(
+                "Restored safety state for %d worker(s) from the database", len(data["workers"])
+            )
+
+    def _needs_row(self, wid, machine):
+        return (
+            machine.state != NORMAL
+            or wid in self._frozen
+            or wid in self._on_break
+            or wid in self._incapacitated
+        )
+
+    def _encode(self, wid, machine):
+        frozen = self._frozen.get(wid)
+        blob = {
+            "machine": machine.to_state(),
+            "frozen": (
+                None if frozen is None else {"pos": list(frozen["pos"]), "where": frozen["where"]}
+            ),
+            "incapacitated": wid in self._incapacitated,
+            "on_break": wid in self._on_break,
+        }
+        return machine.worker.name, json.dumps(blob, sort_keys=True)
+
+    def _decode(self, wid, name, blob):
+        machine = self._machine(WorkerRef(wid, name))
+        machine.from_state(blob["machine"])
+        if blob.get("frozen"):
+            self._frozen[wid] = {
+                "pos": tuple(blob["frozen"]["pos"]),
+                "where": blob["frozen"]["where"],
+            }
+        if blob.get("incapacitated"):
+            self._incapacitated.add(wid)
+        if blob.get("on_break"):
+            self._on_break.add(wid)
+
+    def _persist(self):
+        """Write every change since the last save in ONE transaction. Raises if it cannot."""
+        if self.store is None:
+            return
+        wanted = {}
+        for wid, machine in self._machines.items():
+            if self._needs_row(wid, machine):
+                wanted[wid] = self._encode(wid, machine)
+        changed = {
+            wid: (name, self._machines[wid].state, blob)
+            for wid, (name, blob) in wanted.items()
+            if self._saved.get(wid) != blob
+        }
+        removed = [wid for wid in self._saved if wid not in wanted]
+        audit_rows = self.audit.since(self._audit_saved)
+        note_rows = self.notifier.since(self._notes_saved)
+        if not (changed or removed or audit_rows or note_rows):
+            return
+        self.store.save(changed, removed, audit_rows, note_rows, now=self.clock())
+        self._saved.update({wid: wanted[wid][1] for wid in changed})
+        for wid in removed:
+            self._saved.pop(wid, None)
+        if audit_rows:
+            self._audit_saved = audit_rows[-1]["id"]
+        if note_rows:
+            self._notes_saved = note_rows[-1]["id"]
+
+    def _try_persist(self):
+        """Heartbeat save: a failure is logged and retried next tick (the state stays in memory)."""
+        try:
+            self._persist()
+            self.last_persist_error = None
+        except Exception as exc:  # noqa: BLE001 - the heartbeat must not die over a database hiccup
+            self.persist_errors += 1
+            self.last_persist_error = type(exc).__name__
+            if self.persist_errors == 1 or self.persist_errors % 60 == 0:
+                log.exception(
+                    "Could not save safety state (%d failure(s) so far); will retry",
+                    self.persist_errors,
+                )
+
+    def _snapshot(self):
+        return {
+            "machines": {wid: m.to_state() for wid, m in self._machines.items()},
+            "frozen": copy.deepcopy(self._frozen),
+            "incapacitated": set(self._incapacitated),
+            "on_break": set(self._on_break),
+            "audit": self.audit.last_id(),
+            "notes": self.notifier.last_id(),
+        }
+
+    def _restore(self, snap):
+        for wid in [w for w in self._machines if w not in snap["machines"]]:
+            del self._machines[wid]
+        for wid, state in snap["machines"].items():
+            self._machines[wid].from_state(state)
+        self._frozen = snap["frozen"]
+        self._incapacitated = snap["incapacitated"]
+        self._on_break = snap["on_break"]
+        self.audit.drop_after(snap["audit"])
+        self.notifier.drop_after(snap["notes"])
+
+    @contextmanager
+    def _durable(self):
+        """Run one operator action so that it is either saved or not done at all.
+
+        If the save fails the in-memory change is undone (an emergency is never reported resolved
+        while the database still says it is open) and the caller gets a retryable 503.
+        """
+        snap = self._snapshot()
+        try:
+            yield
+        except Exception:
+            self._restore(snap)
+            raise
+        try:
+            self._persist()
+        except Exception as exc:  # noqa: BLE001
+            self._restore(snap)
+            self.persist_errors += 1
+            self.last_persist_error = type(exc).__name__
+            log.exception("A safety action could not be saved and was undone")
+            raise SafetyError(
+                "The change could not be saved. Nothing was changed; please retry.", status=503
+            ) from exc
 
     # ----- the poll -----
 
@@ -92,6 +260,7 @@ class SafetyService:
                 self._tick_worker(w, now)
             self._annotate(state, now)
             self._last_tick = now
+            self._try_persist()
         return state
 
     def view(self, state, now=None):
@@ -207,6 +376,19 @@ class SafetyService:
             "config": self.config.to_dict(),
             "seed": self.seed,
             "privacy_note": PRIVACY_NOTE,
+            # How fresh the escalation is: if monitoring stopped, the UI says so instead of
+            # showing a calm map that is actually stale.
+            "monitoring": {
+                "persistence": {
+                    "enabled": self.store is not None,
+                    "ok": self.last_persist_error is None,
+                    "unsaved_events": len(self.audit.since(self._audit_saved)) if self.store else 0,
+                },
+                "last_tick_at": _iso(self._last_tick),
+                "age_s": (
+                    None if self._last_tick is None else round(max(0.0, now - self._last_tick), 1)
+                ),
+            },
             "alerts": self._alerts(workers, now),
             "notifications": self.notifier.recent(60),
         }
@@ -285,6 +467,15 @@ class SafetyService:
 
     def _known(self, worker_id):
         w = self._seen.get(worker_id)
+        if w is None and worker_id in self._machines:
+            # Restored from the database after a restart, before the first Live Map tick has seen them.
+            return {
+                "id": worker_id,
+                "name": self._machines[worker_id].worker.name,
+                "status": "Unknown",
+                "lat": None,
+                "lng": None,
+            }
         if w is None:
             raise SafetyError("That worker was not found.", status=404)
         return w
@@ -308,7 +499,7 @@ class SafetyService:
 
     def trigger_accident(self, worker_id, actor=None, now=None):
         now = self.clock() if now is None else now
-        with self._lock:
+        with self._lock, self._durable():
             w = self._known(worker_id)
             if worker_id in self._frozen:
                 raise SafetyError(f"{w['name']} has already stopped.")
@@ -318,7 +509,7 @@ class SafetyService:
 
     def sos(self, worker_id, actor=None, now=None):
         now = self.clock() if now is None else now
-        with self._lock:
+        with self._lock, self._durable():
             w = self._known(worker_id)
             machine = self._machines[worker_id]
             if machine.state == EMERGENCY:
@@ -332,7 +523,7 @@ class SafetyService:
     def respond(self, worker_id, now=None):
         """The worker answers "I'm OK" from the worker view. Returns True if it cleared a check-in."""
         now = self.clock() if now is None else now
-        with self._lock:
+        with self._lock, self._durable():
             w = self._known(worker_id)
             if worker_id in self._incapacitated:
                 raise SafetyError(f"{w['name']} is incapacitated and cannot reply.")
@@ -340,7 +531,7 @@ class SafetyService:
 
     def set_break(self, worker_id, on_break, actor=None, now=None):
         now = self.clock() if now is None else now
-        with self._lock:
+        with self._lock, self._durable():
             w = self._known(worker_id)
             if on_break == (worker_id in self._on_break):
                 return
@@ -360,7 +551,7 @@ class SafetyService:
 
     def resolve(self, worker_id, outcome, note="", actor=None, now=None):
         now = self.clock() if now is None else now
-        with self._lock:
+        with self._lock, self._durable():
             self._known(worker_id)
             try:
                 new_state = self._machines[worker_id].resolve(now, outcome, note, actor)
@@ -371,7 +562,7 @@ class SafetyService:
 
     def return_to_duty(self, worker_id, actor=None, now=None):
         now = self.clock() if now is None else now
-        with self._lock:
+        with self._lock, self._durable():
             self._known(worker_id)
             try:
                 self._machines[worker_id].return_to_duty(now, actor)

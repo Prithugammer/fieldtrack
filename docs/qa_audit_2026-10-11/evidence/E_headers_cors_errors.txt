@@ -1,0 +1,44 @@
+﻿=== E1: core security headers on every kind of response (real dev server, APP_ENV unset)
+  200 GET /api/health                200  missing-core-headers=none
+  200 GET /api/jobs (auth)           200  missing-core-headers=none
+  401 GET /api/jobs (no token)       401  missing-core-headers=none
+  404 unknown URL                    404  missing-core-headers=none
+  405 wrong method                   405  missing-core-headers=none
+  400 malformed JSON                 400  missing-core-headers=none
+  401 wrong password                 401  missing-core-headers=none
+  403 wrong role                     403  missing-core-headers=none
+  409 business conflict              404  missing-core-headers=none
+  CSV download                       200  missing-core-headers=none
+  sample header set: {
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "no-referrer",
+      "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+      "Cache-Control": "no-store",
+      "Access-Control-Allow-Origin": "http://localhost:5174",
+      "Server": "Werkzeug/3.1.9 Python/3.13.9",
+      "Content-Type": "application/json"
+    }
+=== E2: 429 response headers
+  429 throttled login                429  missing-core-headers=none
+  Retry-After: 300 | body: {"error":"Too many failed sign-in attempts. Try again in 300 seconds.","field":null}
+
+=== E3: CORS
+  preflight Origin=http://localhost:5174      -> 200 Allow-Origin=http://localhost:5174 Allow-Headers=authorization, content-type security-headers-present=True
+  preflight Origin=http://evil.example        -> 200 Allow-Origin=None Allow-Headers=None security-headers-present=True
+  preflight Origin=http://localhost:5173      -> 200 Allow-Origin=None Allow-Headers=None security-headers-present=True
+  simple GET with Origin=evil -> 200, Allow-Origin=None (header absent => browser blocks the response)
+=== E4: error handling / information leakage
+  SQL-ish path -> 404 {"error":"That resource was not found.","field":null}
+
+  100k nested '{' body -> 400 {"error":"Request body must be a JSON object.","field":null}
+
+  5 MB email field -> 400 {"error":"Email must be at most 120 characters.","field":"email"}
+
+  50k nested '[' to POST /api/jobs -> 403 {"error":"Your role (Supervisor) cannot do this. Allowed: Dispatcher, Admin.","field":null
+  Server header: Werkzeug/3.1.9 Python/3.13.9
+  login 429 now? (limiter blocks the supervisor after probe loops above?) 200
+=== E5: HSTS only when enabled AND request is HTTPS (TRUSTED_PROXY_COUNT=1 lets X-Forwarded-Proto speak)
+  HSTS_ENABLED=1, plain http                 -> Strict-Transport-Security = None
+  HSTS_ENABLED=1, X-Forwarded-Proto: https   -> Strict-Transport-Security = max-age=31536000
+  HSTS_ENABLED unset, forwarded https -> Strict-Transport-Security = None

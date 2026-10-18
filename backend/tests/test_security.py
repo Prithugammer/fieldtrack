@@ -6,6 +6,8 @@ from datetime import timedelta
 import pytest
 from flask_jwt_extended import create_access_token
 
+from auth import session_claims
+
 from app import create_app
 from extensions import db
 from models import Job, JobSite, User
@@ -47,8 +49,9 @@ def test_workers_and_deactivated_staff_cannot_log_in(client, app):
 
 def _token(app, email, **kwargs):
     user = User.query.filter_by(email=email).first()
-    claims = {"user_id": user.user_id, "role": user.role}
-    return create_access_token(identity=str(user.user_id), additional_claims=claims, **kwargs)
+    return create_access_token(
+        identity=str(user.user_id), additional_claims=session_claims(user), **kwargs
+    )
 
 
 def test_expired_token_is_401(client, app):

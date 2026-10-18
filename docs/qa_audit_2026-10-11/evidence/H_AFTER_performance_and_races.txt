@@ -1,0 +1,31 @@
+=== H1: response time, WSGI test client, in-memory SQLite, seeded data (n=100 each, 10 warm-ups discarded)
+  platform: Python 3.13.9, 12 logical CPUs; sample size 100/endpoint
+  /api/dashboard                   median    5.5 ms   p95    6.9 ms   max    8.7 ms   status 200
+  /api/jobs                        median    5.4 ms   p95    6.0 ms   max    7.8 ms   status 200
+  /api/time-entries                median    5.0 ms   p95    5.9 ms   max    6.3 ms   status 200
+  /api/map/live                    median    3.0 ms   p95    3.7 ms   max    4.5 ms   status 200
+  /api/sites                       median    2.1 ms   p95    2.9 ms   max    3.3 ms   status 200
+  /api/users                       median    1.0 ms   p95    1.4 ms   max    1.9 ms   status 200
+  /api/reports/hours-by-worker     median    2.9 ms   p95    4.6 ms   max    5.7 ms   status 200
+  /api/reports/hours.csv           median    5.4 ms   p95    6.9 ms   max    8.5 ms   status 200
+
+=== H2: response time over real HTTP, threaded dev server, FILE-backed SQLite (n=60 each)
+  /api/dashboard                   median   11.5 ms   p95   31.5 ms   max   37.5 ms
+  /api/jobs                        median   11.4 ms   p95   33.2 ms   max   36.0 ms
+  /api/time-entries                median   11.0 ms   p95   31.0 ms   max   35.7 ms
+  /api/map/live                    median    6.6 ms   p95   28.8 ms   max   29.6 ms
+  /api/sites                       median    6.0 ms   p95   29.7 ms   max   31.2 ms
+  /api/users                       median    3.6 ms   p95   27.9 ms   max   28.6 ms
+  /api/reports/hours-by-worker     median    8.0 ms   p95   27.0 ms   max   30.4 ms
+  /api/reports/hours.csv           median    9.9 ms   p95   30.5 ms   max   33.7 ms
+  NFR-03 target: every request < 500 ms on the demo dataset -> met in this run
+
+=== H3: 1 Hz polling cost: POST /api/safety/tick, 8 simultaneous dashboards x 30 s equivalent (240 requests)
+  tick latency under 8-way concurrency: median 35.4 ms, p95 42.3 ms, errors=0 []
+
+=== H4: race conditions (real threaded server, file SQLite)
+  worker Suresh Magar is assigned to 'Culvert backfill & compaction' tomorrow (no entries yet)
+  12 simultaneous IDENTICAL clock-ins -> statuses {201: 1, 409: 11}; rows actually stored for that worker/day = 1  (no duplicates)
+  12 simultaneous approvals of ONE entry -> statuses {200: 1, 409: 11}
+  job #4: crew 2/3, unassigned workers today: ['Suresh Magar', 'Bishal Neupane']
+  two workers racing for the LAST place, 25 trials -> crew overfilled in 0 trial(s)

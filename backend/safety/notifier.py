@@ -87,6 +87,22 @@ class MockNotifier(Notifier):
         )
         return self._emit("emergency_services", "critical", worker, text, at)
 
+    def since(self, last_id):
+        return [i for i in self.feed if i["id"] > last_id]
+
+    def load(self, items):
+        self.feed.extend(dict(i) for i in items)
+        if items:
+            self._next_id = max(self._next_id, max(i["id"] for i in items) + 1)
+
+    def drop_after(self, last_id):
+        while self.feed and self.feed[-1]["id"] > last_id:
+            self.feed.pop()
+        self._next_id = last_id + 1
+
+    def last_id(self):
+        return self._next_id - 1
+
     def recent(self, limit=60):
         """Newest first."""
         return list(self.feed)[::-1][:limit]

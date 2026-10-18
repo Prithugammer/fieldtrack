@@ -98,5 +98,13 @@ The login page has click-to-fill buttons for these.
   sign in as `supervisor@fieldtrack.com` for the safety demo. Dispatchers can watch but not act.
 - **Pages show "Cannot reach the FieldTrack server"** — the backend in terminal 1 has stopped;
   start it again with `python app.py`.
+- **A yellow banner says the server "could not save safety events"** — the database is unreachable or read-only. Events are kept
+  in memory and retried every second; fix the database and the banner clears. Do not restart until it does, or they are lost.
+- **After restarting the backend an emergency is still shown** — that is intended: open emergencies are saved and restored.
+- **The Live Map shows "Safety monitoring is not running on the server"** — the backend heartbeat is off
+  (`SAFETY_TICKER_ENABLED=0`, or the server was not started with `python app.py`/`wsgi.py`). Escalation will not
+  advance until it is on.
+- **The Live Map says a job site is "outside the supported road network"** — that site is more than 5 km from the
+  Valley's roads (for example a typo in its coordinates). Its workers are not drawn; fix the coordinates on Job Sites.
 - **Live Map looks empty or frozen** — check the *New cycle in* countdown: right after a
   restart most workers have not left yet. Wait 20–30 seconds.

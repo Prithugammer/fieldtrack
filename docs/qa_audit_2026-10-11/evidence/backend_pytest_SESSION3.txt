@@ -1,0 +1,63 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.9, pytest-9.1.1, pluggy-1.6.0
+rootdir: <repo>\backend
+configfile: pytest.ini
+testpaths: tests
+plugins: platformdirs-4.12.3, cov-7.1.0
+collected 676 items
+
+tests\test_assignments_entries_api.py .................................. [  5%]
+..........                                                               [  6%]
+tests\test_audit_followups.py ................                           [  8%]
+tests\test_auth_hardening.py ...................................         [ 14%]
+tests\test_concurrency.py .....................                          [ 17%]
+tests\test_input_hardening.py .......................................... [ 23%]
+..................................................................       [ 33%]
+tests\test_jobs_api.py ....................................              [ 38%]
+tests\test_login_timing.py .........                                     [ 39%]
+tests\test_map.py ...........                                            [ 41%]
+tests\test_map_robustness.py .......................................     [ 47%]
+tests\test_rules.py ...................                                  [ 50%]
+tests\test_safety.py ................................                    [ 54%]
+tests\test_safety_authz.py .........................                     [ 58%]
+tests\test_safety_persistence.py ......................                  [ 61%]
+tests\test_safety_ticker.py ................                             [ 64%]
+tests\test_security.py ...........................                       [ 68%]
+tests\test_seed.py ................                                      [ 70%]
+tests\test_users_api.py ..................................               [ 75%]
+tests\test_validation.py ............................................... [ 82%]
+........................................................................ [ 93%]
+...............................................                          [100%]
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.9-final-0 _______________
+
+Name                     Stmts   Miss Branch BrPart  Cover   Missing
+--------------------------------------------------------------------
+app.py                     115     13     24      4    83%   40->42, 111, 127, 166-169, 202-211
+concurrency.py              22      4      6      2    71%   48, 55-57
+extensions.py               13      0      2      1    93%   17->exit
+models.py                  169      4     18      1    97%   114, 198->208, 291-292, 362
+roads.py                   106      1     46      4    97%   100->112, 113, 131->142, 160->159
+routes\assignments.py       71      3     22      0    97%   103-106
+routes\dashboard.py         31      0     10      2    95%   26->25, 35->34
+routes\reports.py           82      3     24      3    94%   72, 74, 104
+routes\safety.py            85      1      4      1    98%   143
+routes\time_entries.py     127      3     36      0    98%   180-183
+safety\behaviour.py         31      1      2      0    97%   40
+safety\config.py            66      2     12      2    95%   81, 83
+safety\machine.py          165      1     52      1    99%   63, 164->166
+safety\notifier.py          58      0      6      1    98%   16->24
+safety\service.py          347      5    104      7    97%   64, 219, 442, 496->exit, 517->521, 529, 537
+safety\store.py             99      9     14      1    91%   137->135, 146, 177-182, 191-192
+safety\ticker.py            92      4     20      0    96%   32-36, 120-121
+seed.py                    163      9     32      3    93%   370, 376-387, 395-402, 407
+simulation.py              186      0     54      1    99%   314->exit
+validation.py              166      1     76      1    99%   199
+wsgi.py                      4      4      0      0     0%   8-12
+--------------------------------------------------------------------
+TOTAL                     2708     68    694     35    97%
+
+12 files skipped due to complete coverage.
+Required test coverage of 85% reached. Total coverage: 96.68%
+======================= 676 passed in 109.18s (0:01:49) =======================

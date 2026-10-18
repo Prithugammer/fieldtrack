@@ -2,7 +2,11 @@
 
 from datetime import date
 
+import sqlite3
+
 import pytest
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 
 from app import create_app
 from extensions import db
@@ -117,3 +121,26 @@ def ids(app):
         "job_a": Job.query.filter_by(title="Level 4 framing").one().job_id,
         "job_b": Job.query.filter_by(title="Deck pour - Span 2").one().job_id,
     }
+
+
+# ---- close every SQLite connection a test opened (audit D-16) ---------------------------------------
+# Many tests build their own throw-away apps; their pooled connections used to be closed only when the
+# garbage collector got to them, which produced "ResourceWarning: unclosed database" noise.
+_open_connections = []
+
+
+@event.listens_for(Engine, "connect")
+def _remember_connection(dbapi_connection, connection_record):
+    if isinstance(dbapi_connection, sqlite3.Connection):
+        _open_connections.append(dbapi_connection)
+
+
+@pytest.fixture(autouse=True)
+def _close_sqlite_connections():
+    yield
+    for connection in list(_open_connections):
+        try:
+            connection.close()
+        except Exception:  # noqa: BLE001 - already closed or owned by a finished thread
+            pass
+    _open_connections.clear()

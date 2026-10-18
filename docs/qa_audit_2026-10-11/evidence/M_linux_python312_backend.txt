@@ -1,0 +1,15 @@
+Python 3.12.15
+Linux 6.18.33.2-microsoft-standard-WSL2
+[notice] A new release of pip is available: 25.0.1 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+No broken requirements found.
+54 files would be left unchanged.
+compileall-ok
+Required test coverage of 85% reached. Total coverage: 97.49%
+=========================== short test summary info ============================
+FAILED tests/test_input_hardening.py::test_the_nesting_limit_error_names_the_problem
+FAILED tests/test_map_robustness.py::test_supported_routes_are_unchanged_by_the_fix[8-site0-5a6f152eca1d2bc115a5a02370f367995f5b9e01]
+FAILED tests/test_map_robustness.py::test_supported_routes_are_unchanged_by_the_fix[9-site3-7924d1f877456ff06fc4e603b2dc2e88aadf25b0]
+FAILED tests/test_map_robustness.py::test_supported_routes_are_unchanged_by_the_fix[6-site4-701f4ccada76e3fab93ec59c9c0b2b77a85791c6]
+FAILED tests/test_map_robustness.py::test_supported_routes_are_unchanged_by_the_fix[7-site5-6030f27be9cdb02d6b9c4b90301af338765f25b9]
+5 failed, 671 passed in 116.55s (0:01:56)

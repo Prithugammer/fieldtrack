@@ -48,7 +48,10 @@ def live():
     """
     route = parse_id(request.args.get("route"), "route", "Route", required=False)
     state = compute_live_state(path_for=route)
-    return jsonify(current_app.extensions["safety"].view(state))
+    body = current_app.extensions["safety"].view(state)
+    ticker = current_app.extensions.get("safety_ticker")
+    body["safety"]["monitoring"]["background"] = bool(ticker and ticker.running)
+    return jsonify(body)
 
 
 @map_bp.get("/sim-clock")

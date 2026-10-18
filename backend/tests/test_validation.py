@@ -147,9 +147,11 @@ def test_parse_date_rejects_malformed_dates(bad):
         parse_date(bad, "d", "D")
 
 
-def test_parse_datetime_handles_timezones_and_garbage():
-    assert parse_datetime("2026-10-01T07:00:30.5", "t", "T").isoformat() == "2026-10-01T07:00:30"
-    assert parse_datetime("2026-10-01T07:00:00+05:45", "t", "T").tzinfo is None
+def test_parse_datetime_refuses_time_zones_and_garbage():
+    assert parse_datetime("2026-10-01T07:00:30.500", "t", "T").isoformat() == "2026-10-01T07:00:30"
+    for zoned in ("2026-10-01T07:00:00+05:45", "2026-10-01T07:00:00Z", "2026-10-01T07:00-02:00"):
+        with pytest.raises(ApiError, match="time zone"):  # D-11: used to be silently dropped
+            parse_datetime(zoned, "t", "T")
     for bad in ("yesterday", "2026-10-01T25:00", "2026-10-01T07:61", 7):
         with pytest.raises(ApiError):
             parse_datetime(bad, "t", "T")

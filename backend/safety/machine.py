@@ -198,6 +198,29 @@ class SafetyMachine:
         self.incident_started_at = self.trigger = None
         self._reset_anchor(now, self.position)
 
+    # ----- persistence -----
+
+    STATE_FIELDS = (
+        "state", "checkin", "position", "state_since", "incident_started_at", "trigger",
+        "emergency_at", "resolution", "_anchor", "_anchor_since",
+    )  # fmt: skip
+
+    def to_state(self):
+        """Everything needed to rebuild this machine later, as plain JSON-friendly values."""
+        out = {}
+        for name in self.STATE_FIELDS:
+            value = getattr(self, name)
+            out[name.lstrip("_")] = list(value) if isinstance(value, tuple) else value
+        return out
+
+    def from_state(self, data):
+        for name in self.STATE_FIELDS:
+            value = data.get(name.lstrip("_"))
+            if name in ("position", "_anchor") and value is not None:
+                value = tuple(value)
+            setattr(self, name, value)
+        self.checkin = self.checkin or 0
+
     # ----- internals -----
 
     def _audit(self, event, message, at, actor=None):

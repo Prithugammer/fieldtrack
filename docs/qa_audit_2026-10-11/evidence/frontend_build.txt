@@ -1,0 +1,15 @@
+﻿
+> fieldtrack-frontend@1.0.0 build
+> vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 114 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     1.25 kB │ gzip:  0.67 kB
+dist/assets/index-Cn0c-wur.css     18.62 kB │ gzip:  4.06 kB
+dist/assets/LiveMap-WTbX_rgA.css   22.53 kB │ gzip:  8.03 kB
+dist/assets/LiveMap-Dhzwmqn9.js   172.19 kB │ gzip: 50.78 kB
+dist/assets/index-CXVEULI0.js     321.64 kB │ gzip: 98.63 kB
+✓ built in 2.09s

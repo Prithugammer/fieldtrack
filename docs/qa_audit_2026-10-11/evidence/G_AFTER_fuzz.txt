@@ -1,0 +1,34 @@
+MAX_CONTENT_LENGTH = 1048576 | PROPAGATE_EXCEPTIONS = None | DEBUG = False
+endpoint POST /api/users
+endpoint PATCH /api/users/5
+endpoint POST /api/sites
+endpoint PATCH /api/sites/1
+endpoint POST /api/jobs
+endpoint PATCH /api/jobs/4
+endpoint POST /api/assignments
+endpoint DELETE /api/assignments/1
+endpoint POST /api/time-entries
+endpoint PATCH /api/time-entries/1/clock-out
+endpoint PATCH /api/time-entries/1/approve
+endpoint POST /api/auth/login
+endpoint POST /api/safety/workers/8/accident
+endpoint POST /api/safety/workers/8/sos
+endpoint POST /api/safety/workers/8/respond
+endpoint POST /api/safety/workers/8/break
+endpoint POST /api/safety/workers/8/resolve
+endpoint POST /api/safety/workers/8/return-to-duty
+fuzz: 3069 requests in 7s
+responses with status >= 500: 0
+GET query-string fuzz 500s: 0 []
+
+=== integrity after fuzz
+  PRAGMA foreign_key_check rows: []
+  PRAGMA integrity_check: ok
+
+=== G-GET: no GET endpoint changes persistent or in-memory state
+  17 GET routes x3 as Admin; state identical: True
+  GET routes: /api/assignments, /api/auth/me, /api/dashboard, /api/health, /api/jobs, /api/map/bounds, /api/map/live, /api/map/sim-clock, /api/reports/flagged, /api/reports/hours-by-job, /api/reports/hours-by-worker, /api/reports/hours.csv, /api/safety/audit, /api/safety/config, /api/sites, /api/time-entries, /api/users
+  non-GET routes: DELETE /api/assignments/<int:assignment_id>, PATCH /api/jobs/<int:job_id>, PATCH /api/sites/<int:site_id>, PATCH /api/time-entries/<int:entry_id>/approve, PATCH /api/time-entries/<int:entry_id>/clock-out, PATCH /api/users/<int:user_id>, POST /api/assignments, POST /api/auth/login, POST /api/jobs, POST /api/safety/tick, POST /api/safety/workers/<int:user_id>/accident, POST /api/safety/workers/<int:user_id>/break, POST /api/safety/workers/<int:user_id>/resolve, POST /api/safety/workers/<int:user_id>/respond, POST /api/safety/workers/<int:user_id>/return-to-duty, POST /api/safety/workers/<int:user_id>/sos, POST /api/sites, POST /api/time-entries, POST /api/users
+
+=== G-AUTH: every /api route without a token
+  non-401 responses without token: none (35 method/route pairs)

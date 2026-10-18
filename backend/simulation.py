@@ -30,12 +30,13 @@ from itertools import combinations
 
 from geofence import haversine
 from kathmandu_geo import LANDMARKS, TRAFFIC_HOTSPOTS, random_point_near
-from roads import road_path, snap
+from roads import RouteUnavailable, is_routable, road_path, snap
 
 CYCLE_SECONDS = 300  # one simulated window every 5 real minutes
 SIM_DAY_START = 6 * 60  # 6:00 AM, in minutes after midnight
 SIM_DAY_END = 6 * 60 + 45  # 6:45 AM (short enough that almost everyone is always working)
 PIECE_M = 100  # routes are split into pieces this long for the traffic check
+UNROUTABLE_STATUS = "Route unavailable"  # worker assigned to a site outside the road network
 
 START_MIN_KM, START_MAX_KM = 2.5, 10.0
 MAX_ROUTE_RATIO = 1.3  # waypoints may stretch the line from start to site by at most 30%
@@ -68,16 +69,21 @@ def _length(points):
 
 @lru_cache(maxsize=512)
 def _road_route(user_id, day, site_lat, site_lng):
-    return _build_route(user_id, day, site_lat, site_lng)
+    try:
+        return _build_route(user_id, day, site_lat, site_lng)
+    except RouteUnavailable:
+        return None  # cached too, so an unsupported site costs one cheap check per request
 
 
 def build_route(user_id, day, site_lat, site_lng):
     """Deterministic commute for one worker on one day (same inputs -> same route).
 
     Cached, since road routing is the expensive part and the map polls every second; callers
-    get their own copy because plan_departures() writes into it.
+    get their own copy because plan_departures() writes into it. Returns None when the site is
+    outside the road network's coverage (no route can be drawn there).
     """
-    return dict(_road_route(user_id, day, site_lat, site_lng))
+    route = _road_route(user_id, day, site_lat, site_lng)
+    return None if route is None else dict(route)
 
 
 def _pick_start(rng, end):
@@ -345,10 +351,14 @@ def get_live_map_state(sites, assignments, workers, day, now=None, path_for=None
     """
     minutes, cycle = sim_clock(now)
     by_user = {a.user_id: a for a in assignments}
-    routes = {
-        a.user_id: build_route(a.user_id, day, a.job.site.latitude, a.job.site.longitude)
-        for a in assignments
-    }
+    routes = {}
+    unroutable = set()  # workers whose site is outside the road network: shown, but not simulated
+    for a in assignments:
+        route = build_route(a.user_id, day, a.job.site.latitude, a.job.site.longitude)
+        if route is None:
+            unroutable.add(a.user_id)
+        else:
+            routes[a.user_id] = route
     plan_departures(list(routes.values()), day)
 
     out = []
@@ -365,6 +375,21 @@ def get_live_map_state(sites, assignments, workers, day, now=None, path_for=None
                     "lng": lng,
                     "job_title": None,
                     "site_name": None,
+                    "near_traffic": False,
+                    "hotspot": None,
+                    "distance_remaining_m": None,
+                }
+            )
+            continue
+        if w.user_id in unroutable:
+            out.append(
+                {
+                    **info,
+                    "status": UNROUTABLE_STATUS,
+                    "lat": None,
+                    "lng": None,
+                    "job_title": a.job.title,
+                    "site_name": a.job.site.site_name,
                     "near_traffic": False,
                     "hotspot": None,
                     "distance_remaining_m": None,
@@ -390,6 +415,8 @@ def get_live_map_state(sites, assignments, workers, day, now=None, path_for=None
                 "lng": s.longitude,
                 "radius_m": s.geofence_radius_m,
                 "jobs_today": sorted(jobs_by_site.get(s.site_id, ())),
+                # False = outside the supported road network: its workers get no simulated route
+                "routable": is_routable(s.latitude, s.longitude),
             }
             for s in sites
         ],

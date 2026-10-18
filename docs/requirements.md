@@ -90,3 +90,60 @@ hand. FieldTrack replaces it with a web application that:
 | US-11 | FR-12 |
 | US-12 | FR-12 |
 | US-13 | FR-13 |
+
+## 7. Safety and emergency monitoring (added after the first release)
+
+> **Status of this section.** The safety module was built and documented in the README and API spec before it
+> had any entry in these analysis documents. The requirements below were **written down from the implemented,
+> tested behaviour** on 2026-10-11 so the analysis matches the system. They have **not** been approved by a
+> stakeholder; items marked **DECISION NEEDED** are open product decisions, not agreed requirements.
+
+Scope: workers on shift are watched for inactivity ("man-down"). All worker behaviour is **simulated** (there
+is no mobile app), and all notifications are **mock** (nobody is called or texted).
+
+### 7.1 Functional requirements
+
+| ID | Requirement |
+|----|-------------|
+| FR-14 | The system shall treat a worker as *on shift* while the Live Map shows them *In transit* or *On site*, and shall watch only on-shift workers. A worker on a break, inside a configured rest area, or off shift shall never be flagged. |
+| FR-15 | A worker who has not moved more than `idle_distance_tolerance_m` (15 m) for `idle_threshold_seconds` (600 s; demo preset 15 s) shall receive safety check-in 1 and a *warning* shall be raised for supervisors. |
+| FR-16 | Each unanswered check-in shall be followed, after `checkin_response_window_seconds` (120 s; demo 5 s), by the next check-in, up to `num_checkins` (3). An unanswered last check-in shall put the worker in **EMERGENCY**. So the emergency is declared `idle + num_checkins × window` after the worker stopped (960 s; demo preset 30 s). Each transition is timestamped with the moment it was *due*. |
+| FR-17 | Declaring an EMERGENCY shall alert supervisors at *critical* level and place a **mock** call to emergency services, once. An EMERGENCY shall stay locked (no automatic change) until a Supervisor or Admin resolves it. |
+| FR-18 | A worker's reply "I'm OK" (or moving again) during a check-in shall cancel it and restart idle timing. A reply after the emergency is declared shall not clear it. |
+| FR-19 | A Supervisor or Admin shall resolve an EMERGENCY as *false alarm* (worker returns to normal) or *real incident* (worker is held *Post-incident*, kept visible and not re-escalated, until a Supervisor or Admin returns them to duty). A note up to 500 characters may be recorded. |
+| FR-20 | Every safety event (idle detected, each check-in, replies, accident, SOS, mock call, resolution with note and actor, break start/end) shall be written to an audit log that can be viewed and exported as CSV/JSON. |
+| FR-21 | **Escalation shall not depend on any browser being open.** The server advances it by itself (heartbeat, once a second). |
+| FR-22 | **Open safety state shall survive a server restart.** Open check-ins, EMERGENCY and Post-incident states, stopped/break flags, the audit log and the message feed are saved in the database after every change and restored at start-up. A restart shall not repeat an event that already happened, nor drop an open emergency. |
+| FR-23 | If a Supervisor/Admin action cannot be saved, it shall be **refused** (HTTP 503, nothing changed) rather than appear to succeed. If the heartbeat cannot save, it shall keep the state in memory, retry every second and show a warning on the Live Map. |
+| FR-24 | If a job site is outside the supported road network the Live Map shall keep working; its workers are shown as "Route unavailable" and are not monitored (they have no simulated position). |
+
+### 7.2 Roles and permissions (as implemented)
+
+| Action | Admin | Supervisor | Dispatcher | Worker |
+|--------|:-----:|:----------:|:----------:|:------:|
+| View Live Map, alerts, messages, audit log, safety config | yes | yes | yes | no (cannot sign in) |
+| Trigger accident / SOS / "I'm OK" / break (simulation controls) | yes | yes | no | – |
+| Resolve an EMERGENCY, return a worker to duty | yes | yes | no | – |
+| Run one heartbeat tick on demand (`POST /api/safety/tick`) | yes | yes | yes | – |
+
+**DECISION NEEDED (D-21):** which roles may press the simulation controls was chosen during implementation; only
+"a supervisor closes an emergency" appears in the original README. Confirm or change.
+
+### 7.3 Non-functional requirements for the safety module
+
+| ID | Category | Requirement |
+|----|----------|-------------|
+| NFR-08 | Reliability | Every safety transition is idempotent for a given time: repeated or concurrent ticks never repeat an event. Only one process may run the heartbeat (a database lease); a second process stays idle and takes over if the first stops. |
+| NFR-09 | Recoverability | After a restart, escalation continues on its original schedule. Idle time accumulated by a worker who had **not yet** reached check-in 1 is **not** saved (their idle timer restarts). |
+| NFR-10 | Observability | `GET /api/map/live` reports `safety.monitoring`: last tick, whether the heartbeat is running, and whether saving works. Failures to save are logged once, then once a minute. |
+| NFR-11 | Retention | **DECISION NEEDED:** how long audit and location-related safety records are kept. Currently nothing is deleted (only the most recent 5,000 audit entries and 300 messages are loaded into memory at start-up). |
+
+### 7.4 Failure states and recovery
+
+| Situation | Behaviour |
+|-----------|-----------|
+| Server stopped or crashed while an EMERGENCY is open | The emergency is in the database; after restart it is shown again with its original timestamps, no second alert or call is made. While the server is down nothing escalates (there is no external watchdog). |
+| Database unavailable at start-up | The server refuses to start (starting empty would hide a real incident). |
+| Database unavailable while running | Operator actions: 503 and unchanged. Heartbeat: state kept in memory, retried every second, warning shown. A restart *during* that outage loses the unsaved events. |
+| Two server processes on one database | Only the lease holder escalates; the other is idle and reloads saved state if it takes over. **Running two processes is still not supported**: the idle one serves stale map data. |
+| Saved row unreadable | That worker's state is skipped and logged; the server starts. |

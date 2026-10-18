@@ -23,7 +23,11 @@ def _date_range():
     start = parse_date(request.args.get("from"), "from", "From date", required=False)
     end = parse_date(request.args.get("to"), "to", "To date", required=False)
     end = end or today
-    start = start or end - timedelta(days=6)
+    if start is None:
+        try:
+            start = end - timedelta(days=6)
+        except OverflowError:  # the 7-day default window would begin before year 1
+            start = date.min
     if start > end:
         raise ApiError("'From' date must be on or before 'To' date.", "from")
     return start, end

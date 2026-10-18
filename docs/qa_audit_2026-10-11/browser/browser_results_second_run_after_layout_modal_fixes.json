@@ -1,0 +1,742 @@
+{
+  "startedAt": "2026-10-11T08:59:10.812Z",
+  "checks": [
+    {
+      "id": "layout desktop dashboard: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 1366 vs viewport 1366"
+    },
+    {
+      "id": "console desktop dashboard: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout desktop jobs: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 1366 vs viewport 1366"
+    },
+    {
+      "id": "console desktop jobs: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout desktop live-map: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 1366 vs viewport 1366"
+    },
+    {
+      "id": "console desktop live-map: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout desktop sites: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 1366 vs viewport 1366"
+    },
+    {
+      "id": "console desktop sites: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout desktop crew: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 1366 vs viewport 1366"
+    },
+    {
+      "id": "console desktop crew: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout desktop time-entries: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 1366 vs viewport 1366"
+    },
+    {
+      "id": "console desktop time-entries: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout desktop reports: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 1366 vs viewport 1366"
+    },
+    {
+      "id": "console desktop reports: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout tablet dashboard: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 820 vs viewport 820"
+    },
+    {
+      "id": "console tablet dashboard: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout tablet jobs: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 820 vs viewport 820"
+    },
+    {
+      "id": "console tablet jobs: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout tablet live-map: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 820 vs viewport 820"
+    },
+    {
+      "id": "console tablet live-map: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout tablet sites: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 820 vs viewport 820"
+    },
+    {
+      "id": "console tablet sites: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout tablet crew: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 820 vs viewport 820"
+    },
+    {
+      "id": "console tablet crew: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout tablet time-entries: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 820 vs viewport 820"
+    },
+    {
+      "id": "console tablet time-entries: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout tablet reports: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 820 vs viewport 820"
+    },
+    {
+      "id": "console tablet reports: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout mobile dashboard: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 390 vs viewport 390"
+    },
+    {
+      "id": "console mobile dashboard: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout mobile jobs: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 390 vs viewport 390"
+    },
+    {
+      "id": "console mobile jobs: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout mobile live-map: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 390 vs viewport 390"
+    },
+    {
+      "id": "console mobile live-map: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout mobile sites: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 390 vs viewport 390"
+    },
+    {
+      "id": "console mobile sites: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout mobile crew: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 390 vs viewport 390"
+    },
+    {
+      "id": "console mobile crew: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout mobile time-entries: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 390 vs viewport 390"
+    },
+    {
+      "id": "console mobile time-entries: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout mobile reports: no horizontal page scroll",
+      "ok": true,
+      "detail": "scrollWidth 390 vs viewport 390"
+    },
+    {
+      "id": "console mobile reports: no page errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout desktop login light: no horizontal scroll",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout mobile login light: no horizontal scroll",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout desktop login dark: no horizontal scroll",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "layout mobile login dark: no horizontal scroll",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "keyboard login: first Tab stops reach the email then the password field",
+      "ok": true,
+      "detail": "[\"BUTTON\",\"email\",\"password\",\"BUTTON\"]"
+    },
+    {
+      "id": "keyboard login: every focused control shows a visible focus indicator",
+      "ok": true,
+      "detail": "[true,true,true,true]"
+    },
+    {
+      "id": "keyboard login: Enter submits the form and reaches the dashboard",
+      "ok": true,
+      "detail": "http://localhost:5174/"
+    },
+    {
+      "id": "modal: opening it moves focus inside the dialog",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "modal: Tab never moves focus out of the dialog (focus trap)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "modal: Escape closes it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "modal: focus returns to the button that opened it",
+      "ok": true,
+      "detail": "focus is on: New job|BUTTON"
+    },
+    {
+      "id": "live map: the LiveMap chunk is fetched only when the page is opened",
+      "ok": true,
+      "detail": "chunk requested before: 0"
+    },
+    {
+      "id": "live map: polls GET /api/map/live about once a second (6 s window)",
+      "ok": true,
+      "detail": "GET /map/live x7"
+    },
+    {
+      "id": "live map: does not call POST /api/safety/tick any more",
+      "ok": true,
+      "detail": "POST /safety/tick x0"
+    },
+    {
+      "id": "live map: the Safety panel is shown",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "safety UI: Supervisor sees Trigger accident / SOS / break in a worker popup",
+      "ok": true,
+      "detail": "Start break"
+    },
+    {
+      "id": "safety UI: Dispatcher sees NO accident/SOS/break buttons in worker popups",
+      "ok": true,
+      "detail": "buttons seen: []"
+    },
+    {
+      "id": "safety UI: Supervisor can press SOS on an on-shift worker",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "safety UI: the SOS adds an EMERGENCY alert with a resolve control to the Safety panel",
+      "ok": true,
+      "detail": "resolve buttons before 5, after SOS 6"
+    },
+    {
+      "id": "safety UI: resolving it as a false alarm removes that alert",
+      "ok": true,
+      "detail": "resolve buttons after resolving 5"
+    },
+    {
+      "id": "far-away site: the Live Map shows its warning within 5 s (was 13.5 s+ before the fix)",
+      "ok": true,
+      "detail": "1124 ms"
+    },
+    {
+      "id": "far-away site: the rest of the map still renders (Safety panel visible)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "far-away site: other API calls stay fast (safety config)",
+      "ok": true,
+      "detail": "6 ms"
+    },
+    {
+      "id": "error state: dashboard shows a readable message when the server is unreachable",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "error state: \"Try again\" recovers once the server is back",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "error state: a server 500 is shown with its message (no blank page)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "session: an invalid stored token sends the user to the sign-in page",
+      "ok": true,
+      "detail": "http://localhost:5174/login"
+    },
+    {
+      "id": "session: and the bad token is removed from storage",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "role UI: dispatcher sees New job=true, Record time entry=false",
+      "ok": true,
+      "detail": "seen: true/false"
+    },
+    {
+      "id": "role UI: supervisor sees New job=false, Record time entry=true",
+      "ok": true,
+      "detail": "seen: false/true"
+    }
+  ],
+  "axe": {
+    "desktop/dashboard/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 6,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": "div:nth-child(1) > .sidebar__section"
+      }
+    ],
+    "desktop/jobs/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 7,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": "div:nth-child(1) > .sidebar__section"
+      }
+    ],
+    "desktop/live-map/light": [],
+    "desktop/sites/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 7,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": "div:nth-child(1) > .sidebar__section"
+      }
+    ],
+    "desktop/crew/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 10,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": "div:nth-child(1) > .sidebar__section"
+      }
+    ],
+    "desktop/time-entries/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 32,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": "div:nth-child(1) > .sidebar__section"
+      }
+    ],
+    "desktop/reports/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 24,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": "div:nth-child(1) > .sidebar__section"
+      }
+    ],
+    "mobile/dashboard/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 3,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": "th:nth-child(1)"
+      },
+      {
+        "id": "scrollable-region-focusable",
+        "impact": "serious",
+        "nodes": 1,
+        "help": "Scrollable region must have keyboard access",
+        "sample": ".table-wrap"
+      }
+    ],
+    "mobile/jobs/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 4,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": "th:nth-child(1)"
+      },
+      {
+        "id": "scrollable-region-focusable",
+        "impact": "serious",
+        "nodes": 1,
+        "help": "Scrollable region must have keyboard access",
+        "sample": ".table-wrap"
+      }
+    ],
+    "mobile/live-map/light": [],
+    "mobile/sites/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 4,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": "th:nth-child(1)"
+      },
+      {
+        "id": "scrollable-region-focusable",
+        "impact": "serious",
+        "nodes": 1,
+        "help": "Scrollable region must have keyboard access",
+        "sample": ".table-wrap"
+      }
+    ],
+    "mobile/crew/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 7,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": "button[role=\"tab\"]:nth-child(2)"
+      },
+      {
+        "id": "scrollable-region-focusable",
+        "impact": "serious",
+        "nodes": 1,
+        "help": "Scrollable region must have keyboard access",
+        "sample": ".table-wrap"
+      }
+    ],
+    "mobile/time-entries/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 29,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": ".btn--primary"
+      }
+    ],
+    "mobile/reports/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 21,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": ".btn--primary"
+      },
+      {
+        "id": "scrollable-region-focusable",
+        "impact": "serious",
+        "nodes": 3,
+        "help": "Scrollable region must have keyboard access",
+        "sample": ".card:nth-child(2) > .table-wrap"
+      }
+    ],
+    "desktop/login/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 1,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": ".btn--primary"
+      }
+    ],
+    "mobile/login/light": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 1,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": ".btn--primary"
+      }
+    ],
+    "desktop/login/dark": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 1,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": ".btn--primary"
+      }
+    ],
+    "mobile/login/dark": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 1,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": ".btn--primary"
+      }
+    ],
+    "desktop/dashboard/dark": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 3,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": "div:nth-child(1) > .sidebar__section"
+      }
+    ],
+    "desktop/time-entries/dark": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 14,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": "div:nth-child(1) > .sidebar__section"
+      }
+    ],
+    "desktop/jobs/dark": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 3,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": "div:nth-child(1) > .sidebar__section"
+      }
+    ]
+  },
+  "layout": {
+    "desktop/dashboard": {
+      "scrollW": 1366,
+      "innerW": 1366,
+      "small": 5,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "desktop/jobs": {
+      "scrollW": 1366,
+      "innerW": 1366,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "desktop/live-map": {
+      "scrollW": 1366,
+      "innerW": 1366,
+      "small": 18,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "desktop/sites": {
+      "scrollW": 1366,
+      "innerW": 1366,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "desktop/crew": {
+      "scrollW": 1366,
+      "innerW": 1366,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "desktop/time-entries": {
+      "scrollW": 1366,
+      "innerW": 1366,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "desktop/reports": {
+      "scrollW": 1366,
+      "innerW": 1366,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "tablet/dashboard": {
+      "scrollW": 820,
+      "innerW": 820,
+      "small": 5,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "tablet/jobs": {
+      "scrollW": 820,
+      "innerW": 820,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "tablet/live-map": {
+      "scrollW": 820,
+      "innerW": 820,
+      "small": 18,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "tablet/sites": {
+      "scrollW": 820,
+      "innerW": 820,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "tablet/crew": {
+      "scrollW": 820,
+      "innerW": 820,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "tablet/time-entries": {
+      "scrollW": 820,
+      "innerW": 820,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "tablet/reports": {
+      "scrollW": 820,
+      "innerW": 820,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "mobile/dashboard": {
+      "scrollW": 390,
+      "innerW": 390,
+      "small": 5,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "mobile/jobs": {
+      "scrollW": 390,
+      "innerW": 390,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "mobile/live-map": {
+      "scrollW": 390,
+      "innerW": 390,
+      "small": 18,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "mobile/sites": {
+      "scrollW": 390,
+      "innerW": 390,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "mobile/crew": {
+      "scrollW": 390,
+      "innerW": 390,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "mobile/time-entries": {
+      "scrollW": 390,
+      "innerW": 390,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    },
+    "mobile/reports": {
+      "scrollW": 390,
+      "innerW": 390,
+      "small": 0,
+      "title": "FieldTrack — Dispatch & Time Tracking"
+    }
+  },
+  "notes": [
+    {
+      "keyboardOrderLogin": [
+        {
+          "tag": "BUTTON",
+          "id": "",
+          "text": "",
+          "outline": false,
+          "shadow": true
+        },
+        {
+          "tag": "INPUT",
+          "id": "email",
+          "text": "",
+          "outline": false,
+          "shadow": true
+        },
+        {
+          "tag": "INPUT",
+          "id": "password",
+          "text": "",
+          "outline": false,
+          "shadow": true
+        },
+        {
+          "tag": "BUTTON",
+          "id": "",
+          "text": "Sign in",
+          "outline": false,
+          "shadow": true
+        }
+      ]
+    }
+  ],
+  "finishedAt": "2026-10-11T09:01:10.790Z",
+  "summary": {
+    "passed": 72,
+    "failed": 0
+  }
+}

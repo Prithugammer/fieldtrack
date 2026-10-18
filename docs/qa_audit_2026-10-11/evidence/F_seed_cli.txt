@@ -1,0 +1,18 @@
+﻿F1 ordinary seed, empty DB        -> (0, 'Seeded: 12 users, 6 sites, 8 jobs, 17 assignments, 20 time entries (3 flagged, 4 approved), 34 location pings.') {'users': 12, 'job_sites': 6, 'jobs': 8, 'assignments': 17, 'time_entries': 20, 'location_pings': 34}
+F2 ordinary seed again (x2)       -> (0, 'The database already contains data, so nothing was changed. Use `python seed.py --reset --yes` to erase it and reload the demo data.') (0, 'The database already contains data, so nothing was changed. Use `python seed.py --reset --yes` to erase it and reload the demo data.') | counts unchanged: True
+F3 ordinary seed with existing rows -> (0, 'The database already contains data, so nothing was changed. Use `python seed.py --reset --yes` to erase it and reload the demo data.') | hand-added row preserved: True
+F4 --reset without --yes, no TTY  -> (1, 'Refusing to reset without confirmation: add --yes.') | rows preserved: True
+F4b --reset, stdin says 'no'       -> (1, 'Refusing to reset without confirmation: add --yes.') | rows preserved: True
+F4c --yes alone (no --reset)       -> (0, 'The database already contains data, so nothing was changed. Use `python seed.py --reset --yes` to erase it and reload the demo data.') | rows preserved: True
+F5 --reset --yes                   -> (0, 'Seeded: 12 users, 6 sites, 8 jobs, 17 assignments, 20 time entries (3 flagged, 4 approved), 34 location pings.') {'users': 12, 'job_sites': 6, 'jobs': 8, 'assignments': 17, 'time_entries': 20, 'location_pings': 34}
+F6 production + --reset --yes      -> (1, 'Refusing to reset: APP_ENV=production. Production data is never wiped.') | rows preserved: True
+   after F6 counts: {'users': 12, 'job_sites': 6, 'jobs': 8, 'assignments': 17, 'time_entries': 20, 'location_pings': 34}
+F6b production, ordinary seed      -> (0, 'The database already contains data, so nothing was changed. Use `python seed.py --reset --yes` to erase it and reload the demo data.') (ordinary seeding is allowed in production; it only fills an empty DB)
+F7 non-SQLite URL (postgres) + --reset --yes -> (1, "ModuleNotFoundError: No module named 'psycopg'")
+F7b non-SQLite URL, ordinary seed             -> (1, "ModuleNotFoundError: No module named 'psycopg'")
+F7c mysql URL + --reset --yes                 -> (1, "ModuleNotFoundError: No module named 'MySQLdb'")
+F8 unavailable database (missing directory)   -> (1, '(Background on this error at: https://sqlalche.me/e/21/e3q8)')
+F8b unavailable database + --reset --yes      -> (1, '(Background on this error at: https://sqlalche.me/e/21/e3q8)')
+F9 unknown flag                    -> (2, 'seed.py: error: unrecognized arguments: --wipe')
+F10 --help                         -> (0, '  --yes       confirm --reset without a prompt')
+F11 documented commands: README/DEMO use 'python seed.py --reset --yes' and 'python seed.py' -> accepted by the CLI (F1, F5)

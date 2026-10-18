@@ -149,3 +149,14 @@ road on average.
   the road network is a snapshot: rebuild it with `tools/build_road_network.py` to refresh.
 - Every worker makes one commute per cycle; there are no lunch trips or site-to-site moves.
 - The map shows assignments for today's date only.
+
+## Sites outside the road network
+
+Routing uses the committed road file (latitude 27.59-27.84, longitude 85.16-85.48). `roads.nearest_node` snaps a
+point to the closest road point but **gives up** (returns `None`) when the point is outside the file's bounding box
+widened by 5 km (`MAX_SNAP_M`) or no road point lies within 5 km. Before this limit existed the search kept
+widening forever: a site in Pokhara made the first map request take 13.5 s and a site at (0, 0) never returned,
+which also froze the safety controls (they share the simulation). Now such a site is reported as `routable: false`,
+its workers appear as "Route unavailable" (no position), the map shows a warning, and everything else keeps working.
+The 5 km figure is a documented engineering choice, not a requirement: it comfortably covers the Valley and its
+edges while bounding the work to a few hundred grid cells.

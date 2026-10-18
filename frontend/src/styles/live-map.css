@@ -120,6 +120,7 @@
 
 .live-map__clock-group {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
 }

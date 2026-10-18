@@ -1,0 +1,16 @@
+﻿routes identical: True (200 combos)
+125 requests compared, 2 differ
+- assign:3
+    orig: 201 {"assignment": {"assigned_at": "2026-10-11T12:38:15.956683", "assignment_id": 3, "full_name": "Worker One", "job_id": 3, "job_title": "Job tomorrow", "site_name": "Site A2", "trade": "Carpenter", "user_id": 5, "work_date": "2026-10-12"}}
+    new : 201 {"assignment": {"assigned_at": "2026-10-11T12:38:18.961462", "assignment_id": 3, "full_name": "Worker One", "job_id": 3, "job_title": "Job tomorrow", "site_name": "Site A2", "trade": "Carpenter", "user_id": 5, "work_date": "2026-10-12"}}
+- list_assign
+    orig: 200 {"assignments": [{"assigned_at": "2026-10-11T12:38:15.322045", "assignment_id": 2, "full_name": "Worker Two", "job_id": 3, "job_title": "Job tomorrow", "site_name": "Site A2", "trade": "Laborer", "user_id": 6, "work_date": "2026-10-12"}, {"assigned_at": "2026-10-11T12:38:15.956683", "assignment_id":
+    new : 200 {"assignments": [{"assigned_at": "2026-10-11T12:38:18.737381", "assignment_id": 2, "full_name": "Worker Two", "job_id": 3, "job_title": "Job tomorrow", "site_name": "Site A2", "trade": "Laborer", "user_id": 6, "work_date": "2026-10-12"}, {"assigned_at": "2026-10-11T12:38:18.961462", "assignment_id":
+patch_user identical/total: (34, 34)
+self_ identical/total: (3, 3)
+worker_promote identical/total: (2, 2)
+dashboard identical/total: (4, 4)
+create_ identical/total: (20, 20)
+assign identical/total: (8, 9)
+entry identical/total: (11, 11)
+report identical/total: (5, 5)

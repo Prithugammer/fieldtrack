@@ -1,0 +1,10 @@
+v22.23.3
+Linux 6.18.33.2-microsoft-standard-WSL2
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
+All matched files use Prettier code style!
+ Test Files  8 passed (8)
+      Tests  78 passed (78)
+dist/assets/LiveMap-dOtRIIsK.js   173.42 kB │ gzip: 51.28 kB
+dist/assets/index-Dw0RhPDD.js     322.34 kB │ gzip: 98.87 kB
+✓ built in 3.92s

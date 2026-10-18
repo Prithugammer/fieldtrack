@@ -1,0 +1,14 @@
+Python 3.13.16
+Linux 6.18.33.2-microsoft-standard-WSL2
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+No broken requirements found.
+54 files would be left unchanged.
+compileall-ok
+--------------------------------------------
+TOTAL                     2708     68    97%
+
+16 files skipped due to complete coverage.
+Required test coverage of 85% reached. Total coverage: 97.49%
+=========================== short test summary info ============================
+FAILED tests/test_input_hardening.py::test_the_nesting_limit_error_names_the_problem
+1 failed, 675 passed in 110.45s (0:01:50)

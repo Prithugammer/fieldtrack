@@ -1,0 +1,19 @@
+﻿=== C2: GET with accident_probability=1 must not roll accidents; POST tick does
+  ACCIDENT audit entries after 10 GETs = 0; after 1 POST tick = 1 (the in-transit worker rolled an accident)
+
+=== C3: concurrency over a real threaded HTTP server, file-backed SQLite
+  sequential: 33 audit events, request statuses={200: 60}, errors=0
+  parallel (8 simultaneous ticks per simulated second, 480 requests): 33 events, statuses={200: 480}, errors=0 []
+  identical event lists (worker, event, due-time): True
+  identical final machine states: True
+  event counts (parallel): {'CHECKIN_SENT': 9, 'CHECKIN_UNANSWERED': 9, 'EMERGENCY': 3, 'EMERGENCY_CALL': 3, 'IDLE_DETECTED': 3, 'SUPERVISOR_ALERT': 6}
+  duplicate events in parallel run: none
+
+=== C4: monitoring gap (nobody ticking) - does escalation continue by itself?
+  t=12 s with a dashboard polling: worker 101 state = CHECKIN_1
+  t=60 s, first tick after a 47 s gap (worker stationary the whole time): state = NORMAL; events = ['IDLE_DETECTED', 'CHECKIN_SENT', 'SUPERVISOR_ALERT', 'CHECKIN_CLEARED']
+  control: the same worker polled continuously reaches EMERGENCY at:
+  continuous polling: EMERGENCY declared at t = 25 s (idle 10 + 3 x 5 s windows = 25 s expected)
+
+=== C5: the client cannot choose the time (server clock only)
+  tick with ?now=0 / body now=0 -> 200 (ignored; time comes from the server clock)

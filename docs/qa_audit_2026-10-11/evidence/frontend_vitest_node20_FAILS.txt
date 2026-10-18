@@ -1,0 +1,64 @@
+﻿
+ RUN  v3.2.7 <repo>/frontend
+
+node.exe : ⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+At line:1 char:658
++ ... n20 --version; & $n20 node_modules\vitest\vitest.mjs run 2>&1 | Tee-O ...
++                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+Vitest caught 3 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+TypeError: webidl.util.markAsUncloneable is not a function
+ ❯ new CacheStorage node_modules/undici/lib/web/cache/cachestorage.js:20:17
+ ❯ Object.<anonymous> node_modules/undici/index.js:179:25
+ ❯ Module._compile node:internal/modules/cjs/loader:1521:14
+ ❯ Object.Module._extensions..js node:internal/modules/cjs/loader:1623:10
+ ❯ Module.load node:internal/modules/cjs/loader:1266:32
+ ❯ Function.Module._load node:internal/modules/cjs/loader:1091:12
+ ❯ Module.require node:internal/modules/cjs/loader:1289:19
+ ❯ require node:internal/modules/helpers:182:18
+ ❯ Object.<anonymous> node_modules/jsdom/lib/api.js:12:33
+ ❯ Module._compile node:internal/modules/cjs/loader:1521:14
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+TypeError: webidl.util.markAsUncloneable is not a function
+ ❯ new CacheStorage node_modules/undici/lib/web/cache/cachestorage.js:20:17
+ ❯ Object.<anonymous> node_modules/undici/index.js:179:25
+ ❯ Module._compile node:internal/modules/cjs/loader:1521:14
+ ❯ Object.Module._extensions..js node:internal/modules/cjs/loader:1623:10
+ ❯ Module.load node:internal/modules/cjs/loader:1266:32
+ ❯ Function.Module._load node:internal/modules/cjs/loader:1091:12
+ ❯ Module.require node:internal/modules/cjs/loader:1289:19
+ ❯ require node:internal/modules/helpers:182:18
+ ❯ Object.<anonymous> node_modules/jsdom/lib/api.js:12:33
+ ❯ Module._compile node:internal/modules/cjs/loader:1521:14
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+TypeError: webidl.util.markAsUncloneable is not a function
+ ❯ new CacheStorage node_modules/undici/lib/web/cache/cachestorage.js:20:17
+ ❯ Object.<anonymous> node_modules/undici/index.js:179:25
+ ❯ Module._compile node:internal/modules/cjs/loader:1521:14
+ ❯ Object.Module._extensions..js node:internal/modules/cjs/loader:1623:10
+ ❯ Module.load node:internal/modules/cjs/loader:1266:32
+ ❯ Function.Module._load node:internal/modules/cjs/loader:1091:12
+ ❯ Module.require node:internal/modules/cjs/loader:1289:19
+ ❯ require node:internal/modules/helpers:182:18
+ ❯ Object.<anonymous> node_modules/jsdom/lib/api.js:12:33
+ ❯ Module._compile node:internal/modules/cjs/loader:1521:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files   (3)
+      Tests  no tests
+     Errors  3 errors
+   Start at  12:34:38
+   Duration  937ms (transform 49ms, setup 0ms, collect 0ms, tests 0ms, environment 0ms, prepare 0ms)
+

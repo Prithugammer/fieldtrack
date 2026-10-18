@@ -36,6 +36,32 @@ class AuditLog:
             self._items.append(item)
         return item
 
+    def since(self, last_id):
+        """Entries with an id greater than `last_id`, oldest first (what still needs saving)."""
+        with self._lock:
+            return [i for i in reversed(self._items) if i["id"] > last_id][::-1]
+
+    def load(self, items):
+        """Re-fill from saved rows (start-up). Ids continue after the highest one seen."""
+        with self._lock:
+            self._items.extend(dict(i) for i in items)
+            if items:
+                self._next_id = max(self._next_id, max(i["id"] for i in items) + 1)
+
+    def reset_ids(self, next_id):
+        self._next_id = max(next_id, 1)
+
+    def drop_after(self, last_id):
+        """Forget entries newer than `last_id` (an action whose save failed is undone)."""
+        with self._lock:
+            while self._items and self._items[-1]["id"] > last_id:
+                self._items.pop()
+            self._next_id = last_id + 1
+
+    def last_id(self):
+        with self._lock:
+            return self._next_id - 1
+
     def entries(self, worker_id=None):
         """Oldest first."""
         with self._lock:

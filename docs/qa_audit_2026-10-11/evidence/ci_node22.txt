@@ -1,0 +1,19 @@
+﻿##### node22 : v22.22.2
+--- prettier --check .
+Checking formatting...
+All matched files use Prettier code style!
+--- vitest run
+   ✓ application entry point and authentication > shows a wrong-password error under the field and stays on the sign-in page  589ms
+   ✓ application entry point and authentication > shows the throttling message when the server answers 429  660ms
+
+ Test Files  3 passed (3)
+      Tests  17 passed (17)
+   Start at  14:07:31
+   Duration  28.60s (transform 456ms, setup 12.59s, collect 4.05s, tests 3.10s, environment 55.39s, prepare 1.89s)
+
+--- vite build
+<scratch>/dist_node22/assets/index-Cn0c-wur.css     18.62 kB │ gzip:  4.06 kB
+<scratch>/dist_node22/assets/LiveMap-WTbX_rgA.css   22.53 kB │ gzip:  8.03 kB
+<scratch>/dist_node22/assets/LiveMap-Dhzwmqn9.js   172.19 kB │ gzip: 50.78 kB
+<scratch>/dist_node22/assets/index-CXVEULI0.js     321.64 kB │ gzip: 98.63 kB
+✓ built in 2.73s

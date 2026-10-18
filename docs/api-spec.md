@@ -24,8 +24,11 @@ about a single field.
 | 401 | Missing, invalid or expired token; or wrong email/password on login. |
 | 403 | Authenticated, but the role is not allowed (or the account is deactivated). The role is read from the database on every request, so a demotion takes effect immediately. |
 | 404 | The referenced record does not exist (including an id too large to exist). |
+| 413 | The request body is larger than `MAX_REQUEST_BYTES` (default 1 MiB). Checked before the body is read. |
 | 409 | Business-rule conflict: double-booking, crew full, not assigned, overlap, already decided, duplicate email. |
+| 401 (session) | `Your session has ended. Please log in again.` — the account's password was changed after the token was issued (or the token predates this check). Sign in again. |
 | 429 | Too many failed logins (see *Login throttling*). Carries a `Retry-After` header (seconds). |
+| 503 | The database stayed locked by another write beyond `SQLITE_BUSY_TIMEOUT_SECONDS`. Nothing was changed; retry after `Retry-After` (1 s). |
 
 ## Numbers and ids
 
@@ -40,12 +43,16 @@ Whole numbers and ids are checked before they reach the database:
   but does not exist is a **404**.
 - An id in the URL path (`/jobs/{job_id}`, ...) that is zero, or larger than 64 bits, is a **404**.
 - Decimals (latitude, longitude) must be finite and in range. Dates are exactly `YYYY-MM-DD`.
+- Datetimes are local site time **without a zone**: `2026-10-01T07:00` (a space instead of `T` and seconds are fine). A value with `Z` or an offset such as `+05:45` is a **400** (it used to be silently shifted).
 - Passwords are 8-128 characters and at most **72 bytes** (a bcrypt limit); longer is a **400**.
 
 ## Login throttling
 
-Only **failed** logins count. After 5 failures for one email (`LOGIN_MAX_FAILURES_PER_ACCOUNT`) or 20
-from one client address (`LOGIN_MAX_FAILURES_PER_CLIENT`) within 300 s (`LOGIN_RATE_WINDOW_SECONDS`),
+Only **failed** logins count. Within 300 s (`LOGIN_RATE_WINDOW_SECONDS`), a login is refused after 5 failures for one email **from one client address**
+(`LOGIN_MAX_FAILURES_PER_ACCOUNT`), 25 failures for one email from all addresses together (`LOGIN_MAX_FAILURES_PER_ACCOUNT_TOTAL`), or 20 from one
+client address across all emails (`LOGIN_MAX_FAILURES_PER_CLIENT`). A stranger who guesses wrong five times therefore blocks only *their own address* for that
+account; the real owner at another address can still sign in.
+When a limit is reached,
 `POST /auth/login` answers **429** `{"error": "Too many failed sign-in attempts. Try again in N seconds.", "field": null}`
 with `Retry-After: N` — even for the correct password — until the oldest failure leaves the window.
 Blocked attempts are not counted, so a block never extends itself and no account is locked
@@ -319,12 +326,28 @@ moment, with the rest setting off during the window.
 - **200:** `{ "south": 27.6, "west": 85.2, "north": 27.8, "east": 85.45, "traffic_hotspots": [ { "name": "Koteshwor", "lat": 27.6775, "lng": 85.3485, "radius_m": 700, "speed_multiplier": 0.25 }, ... ] }`
 
 
+### Job sites outside the road network
+
+`GET /map/live` returns, for every site, `routable` (boolean). A site more than 5 km from any point of the
+bundled road network (or with unusable coordinates) has `routable: false`; workers assigned there get
+`status: "Route unavailable"` with `lat`/`lng` of `null`, no route is computed (so the call stays fast), and they are
+never flagged by safety monitoring (they are not "on shift" on the map). The API itself still accepts any valid
+coordinates for a site (FR-04); it is only the *simulation* that declines to route there.
+
 ## Safety / emergency
 `GET /map/live` is **read-only**: it reports the current safety state but never changes it, however
 often it is polled. Time-based escalation (idle timers, check-in windows, the configured random
-accident roll) is advanced by **`POST /safety/tick`**, which the Live Map page calls once a second; it
-returns the same body as `GET /map/live` (and accepts `?route=<user_id>`). Any staff role may tick,
-because it only moves time forward. The `GET /map/live` response gains
+accident roll) is advanced by a **backend heartbeat** (one tick per second, started by `python app.py` /
+`wsgi.py`), so it continues with no browser open. `POST /safety/tick` runs one tick on demand and returns the
+same body as `GET /map/live` (it accepts `?route=<user_id>`); the Live Map page no longer calls it. Any staff
+role may tick, because it only moves time forward, and ticks are idempotent (every transition is stamped with
+the moment it was *due*, under one lock, so concurrent ticks never repeat an event).
+The top-level `safety.monitoring` block reports how fresh the escalation is: `{ last_tick_at, age_s, background, persistence }`
+(`background` is true while the heartbeat thread is running; `persistence` is `{ enabled, ok, unsaved_events }`).
+
+**Durability.** Safety state is saved to the database (tables in the data dictionary) after every change and restored at
+start-up, so an open emergency survives a restart. An operator action that cannot be saved is refused with **503**
+(`The change could not be saved. Nothing was changed; please retry.`). The `GET /map/live` response gains
 `workers[].safety` (`state`, `checkin`, `elapsed_s`, `window_remaining_s`, `incapacitated`, `stopped`,
 `on_break`, `break_zone`), `workers[].sim_status`, a worker `status` of `EMERGENCY`, `Post-incident` or
 `Stopped` when applicable, and a top-level `safety` block: `{ config, seed, privacy_note, alerts[], notifications[] }`.

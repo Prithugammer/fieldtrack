@@ -1,0 +1,15 @@
+Python 3.12.15
+Linux 6.18.33.2-microsoft-standard-WSL2
+[notice] A new release of pip is available: 25.0.1 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+No broken requirements found.
+53 files would be left unchanged.
+compileall-ok
+validation.py              166      1    99%
+wsgi.py                      4      4     0%
+--------------------------------------------
+TOTAL                     2708     68    97%
+
+16 files skipped due to complete coverage.
+Required test coverage of 85% reached. Total coverage: 97.49%
+676 passed in 119.29s (0:01:59)

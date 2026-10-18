@@ -224,7 +224,7 @@ function UserFormModal({ person, onClose, onSaved }) {
               className="input"
               value={form.phone}
               onChange={set('phone')}
-              placeholder="416-555-0100"
+              placeholder="+977-98XXXXXXXX"
             />
           </FormField>
           <FormField label="Role" htmlFor="u-role" error={errors.role} required>

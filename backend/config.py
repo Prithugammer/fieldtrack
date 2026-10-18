@@ -35,6 +35,19 @@ def _bool(name, default):
     return os.environ.get(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
 
 
+def _float(name, default, minimum=0.0):
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        raise ConfigError(f"{name} must be a number.") from None
+    if not value >= minimum:  # also rejects NaN
+        raise ConfigError(f"{name} must be at least {minimum:g}.")
+    return value
+
+
 def _int(name, default, minimum=0):
     raw = os.environ.get(name)
     if raw is None or raw.strip() == "":
@@ -83,10 +96,27 @@ class Config:
     # failure leaves the window, so a lock-out is always temporary.
     LOGIN_RATE_LIMIT_ENABLED = _bool("LOGIN_RATE_LIMIT_ENABLED", True)
     LOGIN_MAX_FAILURES_PER_ACCOUNT = _int("LOGIN_MAX_FAILURES_PER_ACCOUNT", 5, minimum=1)
+    # Failures per account from ALL addresses together (higher, so a stranger cannot cheaply lock an owner out).
+    LOGIN_MAX_FAILURES_PER_ACCOUNT_TOTAL = _int(
+        "LOGIN_MAX_FAILURES_PER_ACCOUNT_TOTAL", 25, minimum=1
+    )
     LOGIN_MAX_FAILURES_PER_CLIENT = _int("LOGIN_MAX_FAILURES_PER_CLIENT", 20, minimum=1)
     LOGIN_RATE_WINDOW_SECONDS = _int("LOGIN_RATE_WINDOW_SECONDS", 300, minimum=1)
 
+    # How long a database write waits for another write to finish before the API answers 503.
+    SQLITE_BUSY_TIMEOUT_SECONDS = _float("SQLITE_BUSY_TIMEOUT_SECONDS", 10.0, minimum=0.0)
+
+    # ---- Safety monitoring ---------------------------------------------------------------------
+    # A backend thread advances safety escalation once per interval, so it keeps running with no
+    # browser open (see safety/ticker.py). Started by `python app.py` / wsgi.py, never by tests.
+    # Keep safety state (open emergencies, audit log, messages) in the database so it survives a restart.
+    SAFETY_PERSISTENCE = _bool("SAFETY_PERSISTENCE", True)
+    SAFETY_TICKER_ENABLED = _bool("SAFETY_TICKER_ENABLED", True)
+    SAFETY_TICK_INTERVAL_SECONDS = _float("SAFETY_TICK_INTERVAL_SECONDS", 1.0, minimum=0.05)
+
     # ---- HTTP hardening ------------------------------------------------------------------------
+    # Largest request body accepted (bytes); bigger ones get HTTP 413 before they are parsed.
+    MAX_CONTENT_LENGTH = _int("MAX_REQUEST_BYTES", 1_048_576, minimum=1024)
     # Send Strict-Transport-Security. Turn on ONLY when the API is served over HTTPS.
     HSTS_ENABLED = _bool("HSTS_ENABLED", False)
     # Number of reverse proxies in front of the app (0 = none). When > 0, X-Forwarded-For/-Proto

@@ -116,7 +116,7 @@ textarea {
   font-weight: var(--weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.58);
 }
 
 .sidebar__link {
@@ -158,7 +158,7 @@ textarea {
   padding: var(--space-2) var(--space-3);
   border-top: 1px solid var(--color-navy-600);
   font-size: var(--text-xs);
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.58);
 }
 
 /* ---------- Top bar ---------- */
@@ -167,12 +167,15 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 10;
-  height: var(--topbar-height);
+  /* min-height (not height): on a narrow screen the title and the actions wrap onto two rows
+     instead of pushing the page wider than the screen. */
+  min-height: var(--topbar-height);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
-  padding: 0 var(--space-4);
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-1) var(--space-4);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
@@ -189,8 +192,12 @@ textarea {
 
 .topbar__user {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .avatar {
@@ -226,6 +233,7 @@ textarea {
 
 .card__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
@@ -381,7 +389,7 @@ textarea {
 
 .btn--primary {
   background: var(--color-orange);
-  color: var(--color-white);
+  color: var(--color-on-orange);
 }
 
 .btn--primary:hover:not(:disabled) {
@@ -408,7 +416,7 @@ textarea {
 }
 
 .btn--success {
-  background: var(--color-green);
+  background: var(--color-green-600);
   color: var(--color-white);
 }
 
@@ -1126,7 +1134,7 @@ textarea.input {
     padding: var(--space-2) var(--space-2) var(--space-4);
   }
   .topbar {
-    padding: 0 var(--space-2);
+    padding: var(--space-1) var(--space-2);
   }
   .topbar__meta {
     display: none;

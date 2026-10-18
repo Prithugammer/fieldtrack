@@ -23,13 +23,22 @@ export default function DataTable({
   emptyMessage,
   rowClassName,
   footer,
+  label = 'Data table',
 }) {
   if (loading && !rows) return <LoadingState />
   if (error) return <ErrorState message={error.message} onRetry={onRetry} />
   if (!rows || rows.length === 0) return <EmptyState title={emptyTitle} message={emptyMessage} />
 
   return (
-    <div className="table-wrap" aria-busy={loading || undefined}>
+    // A horizontally scrollable area must be reachable by keyboard (WCAG 2.1.1), so it is focusable
+    // and named; on a phone a wide table scrolls inside this box instead of widening the page.
+    <div
+      className="table-wrap"
+      tabIndex={0}
+      role="region"
+      aria-label={label}
+      aria-busy={loading || undefined}
+    >
       <table className="table">
         <thead>
           <tr>

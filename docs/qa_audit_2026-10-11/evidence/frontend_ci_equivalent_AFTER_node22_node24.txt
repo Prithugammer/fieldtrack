@@ -1,0 +1,38 @@
+﻿##### node22 : v22.22.2
+--- prettier --check .
+Checking formatting...
+All matched files use Prettier code style!
+--- vitest run
+   ✓ Crew page > shows an inline error when the server rejects a duplicate email  509ms
+   ✓ Time Entries page > requires a reason to approve, then sends the decision and the reason  587ms
+
+ Test Files  7 passed (7)
+      Tests  70 passed (70)
+   Start at  14:58:23
+   Duration  10.83s (transform 1.11s, setup 4.11s, collect 4.56s, tests 15.22s, environment 24.42s, prepare 1.87s)
+
+--- vite build
+<scratch>/dist_node22/assets/index-CjvYM8b2.css     18.79 kB │ gzip:  4.09 kB
+<scratch>/dist_node22/assets/LiveMap-BXfLFbda.css   22.54 kB │ gzip:  8.03 kB
+<scratch>/dist_node22/assets/LiveMap-CNgNXr2v.js   173.07 kB │ gzip: 51.15 kB
+<scratch>/dist_node22/assets/index-CY-t1Gov.js     322.34 kB │ gzip: 98.87 kB
+✓ built in 2.44s
+##### node24 : v24.17.0
+--- prettier --check .
+Checking formatting...
+All matched files use Prettier code style!
+--- vitest run
+   ✓ Time Entries page > requires a reason to approve, then sends the decision and the reason  553ms
+   ✓ Time Entries page > shows "already decided" conflicts from the server  304ms
+
+ Test Files  7 passed (7)
+      Tests  70 passed (70)
+   Start at  14:58:40
+   Duration  9.60s (transform 1.40s, setup 4.21s, collect 4.09s, tests 16.04s, environment 14.17s, prepare 1.43s)
+
+--- vite build
+<scratch>/dist_node24/assets/index-CjvYM8b2.css     18.79 kB │ gzip:  4.09 kB
+<scratch>/dist_node24/assets/LiveMap-BXfLFbda.css   22.54 kB │ gzip:  8.03 kB
+<scratch>/dist_node24/assets/LiveMap-CNgNXr2v.js   173.07 kB │ gzip: 51.15 kB
+<scratch>/dist_node24/assets/index-CY-t1Gov.js     322.34 kB │ gzip: 98.87 kB
+✓ built in 2.20s

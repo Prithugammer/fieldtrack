@@ -4,8 +4,10 @@ from datetime import timedelta
 
 from flask import Blueprint, g, jsonify, request
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 
 from auth import role_required
+from concurrency import begin_write
 from extensions import db
 from models import ENTRY_STATUSES, STAFF_ROLES, Assignment, Job, LocationPing, TimeEntry, User
 from validation import (
@@ -122,6 +124,10 @@ def create_time_entry():
         out_lng = parse_longitude(data.get("out_lng"), "out_lng", "Clock-out longitude")
         _validate_shift(clock_in, clock_out)
 
+    # Steps 2-5 read rows and then insert one: hold the database write lock from here to the commit
+    # so two simultaneous clock-ins cannot both pass the overlap check (see concurrency.py).
+    begin_write()
+
     # 2. Worker and job must exist; worker must be active
     worker = get_or_404(User, user_id, "Worker", field="user_id")
     job = get_or_404(Job, job_id, "Job", field="job_id")
@@ -169,7 +175,14 @@ def create_time_entry():
     _record_ping(worker.user_id, in_lat, in_lng, clock_in)
     if clock_out is not None:
         _record_ping(worker.user_id, out_lat, out_lng, clock_out)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        # The one-open-entry-per-worker index caught a clock-in that slipped past the checks.
+        db.session.rollback()
+        raise ApiError(
+            "This worker already has an open time entry.", "clock_in", status=409
+        ) from None
     return jsonify({"time_entry": entry.to_dict()}), 201
 
 
@@ -181,6 +194,7 @@ def clock_out(entry_id):
     Clock-out must be after clock-in (crossing midnight is fine). The geofence rule is
     applied again with the clock-out coordinates.
     """
+    begin_write()  # "already clocked out?" and the update must be one atomic step
     entry = get_or_404(TimeEntry, entry_id, "Time entry")
     if entry.clock_out is not None:
         raise ApiError("This entry has already been clocked out.", "clock_out", status=409)
@@ -206,6 +220,7 @@ def clock_out(entry_id):
 def approve(entry_id):
     """Approve or reject a completed entry. A reason is always required (audit trail),
     and the deciding user is stored in approved_by."""
+    begin_write()  # "already decided?" and the decision must be one atomic step
     entry = get_or_404(TimeEntry, entry_id, "Time entry")
     data = get_json()
     decision = one_of(data.get("decision"), "decision", "Decision", ("Approved", "Rejected"))

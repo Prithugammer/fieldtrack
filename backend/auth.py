@@ -1,5 +1,6 @@
 """Authentication: login, current user, and the @role_required decorator."""
 
+import hmac
 import logging
 from functools import wraps
 
@@ -14,6 +15,11 @@ from validation import ApiError, get_json, require_str
 log = logging.getLogger("fieldtrack.auth")
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
+
+
+def session_claims(user):
+    """The extra claims put into a login token (also used by tests that mint tokens)."""
+    return {"user_id": user.user_id, "role": user.role, "pwv": user.session_stamp()}
 
 
 def role_required(*roles):
@@ -35,10 +41,14 @@ def role_required(*roles):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             verify_jwt_in_request()
-            user_id = get_jwt().get("user_id")
+            claims = get_jwt()
+            user_id = claims.get("user_id")
             user = db.session.get(User, user_id) if isinstance(user_id, int) else None
             if user is None or not user.is_active:
                 raise ApiError("Your account is no longer active.", status=403)
+            if not hmac.compare_digest(str(claims.get("pwv", "")), user.session_stamp()):
+                # The password was changed (or the token predates this check): sign in again.
+                raise ApiError("Your session has ended. Please log in again.", status=401)
             if user.role not in roles:
                 raise ApiError(
                     f"Your role ({user.role}) cannot do this. Allowed: {', '.join(roles)}.",
@@ -77,8 +87,13 @@ def login():
             )
 
     user = User.query.filter_by(email=email).first()
-    # Same message for "no such user" and "wrong password" so attackers can't probe emails.
-    if user is None or not user.check_password(password):
+    # Same message AND (approximately) the same time for "no such user", "no password on record" and
+    # "wrong password", so attackers can't probe which emails exist (see User.burn_password_check).
+    if user is not None and user.password_hash:
+        password_ok = user.check_password(password)
+    else:
+        password_ok = User.burn_password_check(password)
+    if not password_ok:
         if limiter:
             limiter.record_failure(email, client)
         raise ApiError("Invalid email or password.", "password", status=401)
@@ -91,7 +106,7 @@ def login():
 
     token = create_access_token(
         identity=str(user.user_id),
-        additional_claims={"user_id": user.user_id, "role": user.role},
+        additional_claims=session_claims(user),
     )
     return jsonify({"token": token, "user": user.to_dict()})
 

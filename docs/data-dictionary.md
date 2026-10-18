@@ -59,7 +59,7 @@ and, where noted, by a database constraint).
 | user_id | Integer | — | Yes (FK → users) | Active Worker **assigned to `job_id` on the clock-in date** | `5` |
 | job_id | Integer | — | Yes (FK → jobs) | Must reference an existing job | `4` |
 | clock_in | DateTime | — | Yes | ISO datetime `YYYY-MM-DDTHH:MM`; must not overlap another entry for the worker | `2026-10-01T07:00` |
-| clock_out | DateTime | — | No | NULL while clocked in; must be **after** clock_in (may be the next calendar day); shift ≤ 24 h | `2026-10-01T15:30` |
+| clock_out | DateTime | — | No | NULL while clocked in; must be **after** clock_in (may be the next calendar day); shift ≤ 24 h. A **partial unique index** (`uq_time_entries_one_open_per_worker` on `user_id` where `clock_out IS NULL`) allows at most one open entry per worker | `2026-10-01T15:30` |
 | in_lat | Float | — | Yes | −90.0 to 90.0 | `27.678046` |
 | in_lng | Float | — | Yes | −180.0 to 180.0 | `85.287895` |
 | out_lat | Float | — | With clock_out | −90.0 to 90.0; required when clock_out is given | `27.677956` |
@@ -82,3 +82,28 @@ and, where noted, by a database constraint).
 | latitude | Float | — | Yes | −90.0 to 90.0 | `27.678046` |
 | longitude | Float | — | Yes | −180.0 to 180.0 | `85.287895` |
 | recorded_at | DateTime | — | Yes | Timestamp of the clock-in or clock-out the ping came from | `2026-10-01T07:00:00` |
+
+## Safety tables (added 2026-10-11)
+
+Created automatically at start-up next to the others (`db.create_all()` adds missing tables and never alters or
+drops existing ones). They have no foreign keys on purpose: safety history must outlive a deleted user or job.
+
+### safety_worker_state — one row per worker who is not simply "normal"
+| Field | Type | Notes |
+|-------|------|-------|
+| worker_id | Integer PK | same ids as `users.user_id` |
+| worker_name | String(100) | for display after restart |
+| state | String(20), indexed | `CHECKIN_1` … `CHECKIN_n`, `EMERGENCY`, `POST_INCIDENT`, or `NORMAL` while stopped/on break |
+| data | Text (JSON) | the state machine (timestamps, trigger, resolution), stopped marker, flags |
+| updated_at | Float | Unix time of the last save |
+
+### safety_audit — append-only audit log
+`id` (PK, the number shown in the UI), `t` (Unix time the event was due), `worker_id` (indexed), `worker_name`, `event`, `state`, `message`, `actor`.
+
+### safety_notification — the in-app message feed
+`id` (PK), `t`, `channel` (`worker`, `supervisor`, `emergency_services`), `level`, `worker_id`, `worker_name`, `text`.
+
+### safety_lease — which process runs the heartbeat
+`name` (PK, `heartbeat`), `holder` (process id + random suffix), `expires_at` (Unix time; renewed every tick, about 3 s).
+
+Also added to **time_entries**: a partial unique index `uq_time_entries_one_open_per_worker` (at most one open entry per worker).

@@ -1,0 +1,20 @@
+﻿
+> fieldtrack-frontend@1.0.0 test
+> vitest run
+
+
+ RUN  v3.2.7 <repo>/frontend
+
+ ✓ src/test/api.test.js (5 tests) 13ms
+ ✓ src/test/safetyPanel.test.jsx (3 tests) 580ms
+   ✓ SafetyPanel role behaviour > lets a supervisor resolve an emergency and return a worker to duty  559ms
+ ✓ src/test/app.test.jsx (9 tests) 2519ms
+   ✓ application entry point and authentication > signs in and shows the dashboard with the server data  714ms
+   ✓ application entry point and authentication > shows a wrong-password error under the field and stays on the sign-in page  631ms
+   ✓ application entry point and authentication > shows the throttling message when the server answers 429  628ms
+
+ Test Files  3 passed (3)
+      Tests  17 passed (17)
+   Start at  12:33:55
+   Duration  6.25s (transform 402ms, setup 1.28s, collect 939ms, tests 3.11s, environment 6.50s, prepare 601ms)
+
